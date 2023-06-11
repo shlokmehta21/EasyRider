@@ -8,19 +8,47 @@ import User from "../models/User";
 import ErrorController from "./error";
 import UserSession from "../utils/session";
 
-class LoginController implements IController {
+class AuthController implements IController {
   router: Router = express.Router();
   path: string = routes.LOGIN as string;
 
+  constructor() {
+    this.initializeRoutes();
+  }
+
   initializeRoutes = (): void => {
     this.router.post(this.path, this.login);
+    this.router.get(routes.LOGOUT as string, this.logout);
   };
 
-  async login(req: Request, resp: Response): Promise<void> {
-    const sessionId = req.headers.sessionId as string;
+  logout(req: Request, resp: Response): void {
+    try {
+      if (req.headers.sessionid) {
+        delete req.headers.sessionid;
+        resp.status(200).json(true);
+      } else {
+        new ErrorController().handleError(
+          { code: 400, message: "User not logged In" },
+          req,
+          resp
+        );
+      }
+      return;
+    } catch (err) {
+      console.log(err);
+      new ErrorController().handleError(
+        { code: 500, message: "Internal server error" },
+        req,
+        resp
+      );
+    }
+  }
 
-    if (sessionId !== null) {
-      resp.send(200).json(true);
+  async login(req: Request, resp: Response): Promise<void> {
+    const sessionId = req.headers.sessionid as string;
+    if (sessionId) {
+      resp.status(202).json(true);
+      return;
     }
 
     const { email, password } = req.body;
@@ -66,11 +94,13 @@ class LoginController implements IController {
           userId: user.id,
           email: user.email,
         });
-        resp.header("session-id", sessionId);
-        resp.sendStatus(200).json(true);
+        resp.status(200).setHeader("sessionId", sessionId).json(true);
       }
-    } catch {}
+    } catch (err) {
+      console.error(err);
+      resp.status(500).json({ error: "Internal Server Error" });
+    }
   }
 }
 
-export default LoginController;
+export default AuthController;

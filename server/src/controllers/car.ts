@@ -25,7 +25,7 @@ class Car implements IController {
       resp.status(400).json({ error });
     } else {
       // Save the car to the database or perform other operations
-      resp.sendStatus(200);
+      resp.status(200);
     }
   }
 

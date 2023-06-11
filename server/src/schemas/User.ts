@@ -25,12 +25,10 @@ const userSchema = new mongoose.Schema({
   },
   license: {
     number: {
-      type: Number,
-      required: true,
+      type: String,
     },
     images: {
       type: [Buffer],
-      required: true,
     },
   },
   dob: {
@@ -47,7 +45,6 @@ const userSchema = new mongoose.Schema({
   },
   profilePicture: {
     type: String,
-    required: true,
   },
   createdOn: {
     type: Number,
@@ -69,7 +66,7 @@ const userSchema = new mongoose.Schema({
         required: true,
       },
       domainID: {
-        type: Number,
+        type: String,
         required: true,
       },
       startDate: {
@@ -78,7 +75,6 @@ const userSchema = new mongoose.Schema({
       },
       endDate: {
         type: Number,
-        required: true,
       },
       images: {
         type: [Buffer],

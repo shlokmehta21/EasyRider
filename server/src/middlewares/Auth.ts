@@ -7,8 +7,8 @@ function CheckUserAuthentication(
   resp: Response,
   next: NextFunction
 ) {
-  const userId = req.headers.sessionId as string;
-  if (!userId) {
+  const sessionId = req.headers.sessionid as string;
+  if (!sessionId) {
     new ErrorController().handleError(
       { code: 401, message: "Invalid Session" },
       req,
@@ -16,7 +16,7 @@ function CheckUserAuthentication(
       next
     );
   } else {
-    const isValid: boolean = new UserSession().validateSession(userId);
+    const isValid: boolean = new UserSession().validateSession(sessionId);
     if (!isValid) {
       new ErrorController().handleError(
         { code: 401, message: "Invalid Session" },

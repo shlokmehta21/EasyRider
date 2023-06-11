@@ -183,10 +183,11 @@ class RegisterController implements IController {
       }
       resp.status(200).json(true);
     } catch (err) {
+      console.log(err);
       new ErrorController().handleError(
         {
           code: 500,
-          customMessage: error,
+          message: "Internal server error",
         },
         req,
         resp

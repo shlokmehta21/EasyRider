@@ -6,7 +6,7 @@ export default class UserSession {
   #signOptions: jwt.SignOptions;
   constructor() {
     this.#signOptions = {
-      expiresIn: "never",
+      expiresIn: "8760h",
       algorithm: "HS512",
       subject: "user",
       issuer: "easy rider",
@@ -23,12 +23,24 @@ export default class UserSession {
     return this.#sessionId;
   }
 
+  updateSession(payload: { [key: string]: string }): string {
+    this.#sessionId = jwt.sign(
+      payload,
+      (process.env.SECRET_KEY || "group4Capston@easyrider.com") as string,
+      { ...this.#signOptions, expiresIn: "8760h" }
+    );
+    return this.#sessionId;
+  }
+
   validateSession(token: string): boolean {
-    const resp = jwt.verify(token, process.env.SECRET_KEY as string);
+    const resp: jwt.JwtPayload = jwt.verify(
+      token,
+      process.env.SECRET_KEY as string
+    ) as jwt.JwtPayload;
     if (resp instanceof Error) {
       return false;
     }
-    console.log(resp);
+    resp.exp = 8760;
     return true;
   }
 }

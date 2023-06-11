@@ -4,6 +4,7 @@ const routes: RouteConfig = {
   REGISTER: "/register",
   CAR: "/car",
   LOGIN: "/login",
+  LOGOUT: "/logout",
   PASSWORD: "/reset-password",
 };
 
