@@ -1,8 +1,6 @@
 import React from "react";
 import { SafeAreaView, StyleSheet, Text, View } from "react-native";
-import Register from "./src/screens/Register.screen";
 import { DefaultTheme, NavigationContainer } from "@react-navigation/native";
-
 import AuthStack from "./src/navigation/AuthStack";
 
 const App: React.FC = () => {
