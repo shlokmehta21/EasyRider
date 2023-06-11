@@ -60,7 +60,7 @@ class RegisterController implements IController {
     } else if (this.validDateChecker(user.dob)) {
       error.dob = "Date of Birth is Invalid";
     } else {
-      const dobMoment: moment.Moment = moment(user.dob, "YYYY-MM-DD");
+      const dobMoment: moment.Moment = moment(user.dob);
       const age: number = moment().diff(dobMoment, "years");
       if (age < 18) {
         error.dob = "You must be greater than 18 years old";
@@ -202,7 +202,7 @@ class RegisterController implements IController {
 
   validDateChecker(date: number): boolean {
     try {
-      return moment(date, "YYYY-MM-DD").isValid();
+      return moment(date).isValid();
     } catch (err) {
       return false;
     }
