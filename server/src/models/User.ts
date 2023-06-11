@@ -26,7 +26,7 @@ interface Domain {
   domainID: string;
   startDate: number;
   endDate?: number;
-  images: Buffer[];
+  images?: Buffer[];
 }
 
 export default User;
