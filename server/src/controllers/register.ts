@@ -59,12 +59,6 @@ class RegisterController implements IController {
       error.dob = "Date of Birth is required";
     } else if (this.validDateChecker(user.dob)) {
       error.dob = "Date of Birth is Invalid";
-    } else {
-      const dobMoment: moment.Moment = moment(user.dob);
-      const age: number = moment().diff(dobMoment, "years");
-      if (age < 18) {
-        error.dob = "You must be greater than 18 years old";
-      }
     }
 
     // password validation
