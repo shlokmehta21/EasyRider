@@ -57,7 +57,7 @@ class RegisterController implements IController {
     // dob validation
     if (!user.dob) {
       error.dob = "Date of Birth is required";
-    } else if (this.validDateChecker(user.dob)) {
+    } else if (!this.validDateChecker(user.dob)) {
       error.dob = "Date of Birth is Invalid";
     }
 

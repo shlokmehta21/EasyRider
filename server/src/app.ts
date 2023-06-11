@@ -3,6 +3,7 @@ import * as bodyParser from "body-parser";
 import IController from "./models/interfaces/IController";
 import path from "path";
 import SanitizeInput from "./middlewares/sanitizeInput";
+import "./db";
 
 class App {
   public app: express.Application;
