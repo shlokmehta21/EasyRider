@@ -1,4 +1,4 @@
-declare module "express-session" {
+declare module "session" {
   export interface SessionData {
     userId?: number;
   }

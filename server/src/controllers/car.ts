@@ -6,7 +6,7 @@ import { regex } from "../utils/regex";
 import moment from "moment";
 
 class Car implements IController {
-  router: Router = express.Router();
+  router: Router = Router();
   path: string = routes.CAR as string;
 
   constructor() {

@@ -12,6 +12,7 @@ interface User extends mongoose.Document {
   };
   dob: number;
   password: string;
+  confirmPassword: string;
   phoneNumber: string;
   locale: string;
   profilePicture: Buffer;

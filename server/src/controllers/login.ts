@@ -6,6 +6,7 @@ import bcrypt from "bcrypt";
 import UserDbModel from "../schemas/User";
 import User from "../models/User";
 import ErrorController from "./error";
+import UserSession from "../utils/session";
 
 class LoginController implements IController {
   router: Router = express.Router();
@@ -16,6 +17,12 @@ class LoginController implements IController {
   };
 
   async login(req: Request, resp: Response): Promise<void> {
+    const sessionId = req.headers.sessionId as string;
+
+    if (sessionId !== null) {
+      resp.send(200).json(true);
+    }
+
     const { email, password } = req.body;
     const error: { [key: string]: string } = {};
 
@@ -42,7 +49,7 @@ class LoginController implements IController {
     try {
       const db = new UserDbModel();
       const user: User | null = await db.findOneByParams({ email });
-      if (!user) {
+      if (!user || !user.id) {
         new ErrorController().handleError(
           { code: 400, message: "Email ID not registered" },
           req,
@@ -55,16 +62,14 @@ class LoginController implements IController {
           resp
         );
       } else {
-        req.session.userId = user.id;
+        const sessionId = new UserSession().createUniqueSession({
+          userId: user.id,
+          email: user.email,
+        });
+        resp.header("session-id", sessionId);
         resp.sendStatus(200).json(true);
       }
     } catch {}
-  }
-}
-
-declare module "express-session" {
-  export interface SessionData {
-    userId: string;
   }
 }
 

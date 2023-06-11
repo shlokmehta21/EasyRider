@@ -2,7 +2,6 @@ import express, { Request, Response } from "express";
 import moment from "moment";
 import IController from "../models/interfaces/IController";
 import User from "../models/User";
-import UserDB from "../schemas/User";
 import { registerErrorLabels } from "../utils/label";
 import { regex } from "../utils/regex";
 import routes from "../utils/routesConfig";
@@ -32,7 +31,7 @@ class RegisterController implements IController {
     } else if (user.firstName.length <= 2) {
       error.firstName = "First Name must contain 3 chars";
     } else if (
-      !regex.ALPHANUMERIC_WITH_FIRST_CAPITAL_LETTER.test(user.firstName)
+      !regex.ALPHANUMERIC_WITH_STARTING_WITH_LETTER.test(user.firstName)
     ) {
       error.firstName = "First Name must start with a letter.";
     }
@@ -43,7 +42,7 @@ class RegisterController implements IController {
     } else if (user.lastName.length <= 2) {
       error.lastName = "Last Name must contain 3 chars";
     } else if (
-      !regex.ALPHANUMERIC_WITH_FIRST_CAPITAL_LETTER.test(user.lastName)
+      !regex.ALPHANUMERIC_WITH_STARTING_WITH_LETTER.test(user.lastName)
     ) {
       error.lastName = "Last Name must start with a letter";
     }
@@ -86,10 +85,14 @@ class RegisterController implements IController {
       } else if (!regex.PASSWORD.test(user.password)) {
         error.password = "Password must meet all the requirements";
       } else {
-        // Hash the password
-        const hashedPassword = await bcrypt.hash(user.password, 10);
-        // Update the user object with the hashed password
-        user.password = hashedPassword;
+        if (user.password !== user.confirmPassword) {
+          error.confirmPassword = "Password must match";
+        } else {
+          // Hash the password
+          const hashedPassword = await bcrypt.hash(user.password, 10);
+          // Update the user object with the hashed password
+          user.password = hashedPassword;
+        }
       }
     }
 
@@ -98,10 +101,11 @@ class RegisterController implements IController {
       if (!user.license.number) {
         error.licenseNo = "License is required";
       }
-      if (!user.license.images) {
-        error.licenseImage = "License Images are required";
-      } else if (user.license.images.length < 2) {
-        error.licenseImage = "Front and Back side images are required";
+      if (
+        !user.license.images ||
+        (user.license.images && user.license.images.length < 1)
+      ) {
+        error.licenseImage = "License Image is required";
       }
     }
 
@@ -110,42 +114,44 @@ class RegisterController implements IController {
       error.domain = "Organisation/Institution name is required";
     } else {
       const domainDetails = user.domain[0];
-      // domain name validation
-      if (!domainDetails.name) {
-        error.domainName = "Name is required";
-      } else if (
-        !regex.ALPHANUMERIC_WITH_FIRST_CAPITAL_LETTER.test(domainDetails.name)
-      ) {
-        error.domainName = "Name must be Alphanumeric";
-      }
+      if (!domainDetails) {
+        error.domain = "Domain Details is required";
+      } else {
+        // domain name validation
+        if (!domainDetails.name) {
+          error.domainName = "Name is required";
+        } else if (domainDetails.name.length <= 2) {
+          error.domainName = "Name must contain 3 chars";
+        } else if (
+          !regex.ALPHANUMERIC_WITH_STARTING_WITH_LETTER.test(domainDetails.name)
+        ) {
+          error.domainName = "Name must be Alphanumeric";
+        }
 
-      // domain ID validation
-      if (!domainDetails.id) {
-        error.domainID = "Organisation/Institution ID is required";
-      } else if (!regex.ALPHANUMERIC.test(domainDetails.domainID)) {
-        error.domainID = "Domain ID must be Alphanumeric";
-      }
+        // domain ID validation
+        if (!domainDetails.domainID) {
+          error.domainID = "Organisation/Institution ID is required";
+        }
 
-      // domain start date validation
-      if (!domainDetails.startDate) {
-        error.domainStartDate = "Start Date is required";
-      } else if (this.validDateChecker(domainDetails.startDate)) {
-        error.domainStartDate = "Start Date is Invalid";
-      }
+        // domain start date validation
+        if (!domainDetails.startDate) {
+          error.domainStartDate = "Start Date is required";
+        } else if (!this.validDateChecker(domainDetails.startDate)) {
+          error.domainStartDate = "Start Date is Invalid";
+        }
 
-      // domain end date validation
-      if (
-        domainDetails.endDate &&
-        this.validDateChecker(domainDetails.endDate)
-      ) {
-        error.domainEndDate = "End Date is Invalid";
-      }
+        // domain end date validation
+        if (
+          domainDetails.endDate &&
+          !this.validDateChecker(domainDetails.endDate)
+        ) {
+          error.domainEndDate = "End Date is Invalid";
+        }
 
-      // domain images validation
-      if (!domainDetails.images) {
-        error.domainIDImages = "Domain ID Images are required";
-      } else if (domainDetails.images.length < 2) {
-        error.domainIDImages = "Front and Back side images are required";
+        // domain images validation
+        if (domainDetails.images && domainDetails.images.length < 2) {
+          error.domainIDImages = "Front and Back side images are required";
+        }
       }
     }
 

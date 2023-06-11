@@ -27,7 +27,7 @@ class PasswordController implements IController {
 
   async resetPassword(req: Request, resp: Response): Promise<Boolean> {
     const { token } = req.params;
-    let { password } = req.body;
+    let { password, confirmPassword } = req.body;
     let db: ResetDBModel | UserDbModel = new ResetDBModel();
     const resetData = await db.findOneByParams({
       token,
@@ -61,10 +61,14 @@ class PasswordController implements IController {
         } else if (!regex.PASSWORD.test(password)) {
           error.password = "Password must meet all the requirements";
         } else {
-          // Hash the password
-          const hashedPassword = await bcrypt.hash(password, 10);
-          // Update the user object with the hashed password
-          password = hashedPassword;
+          if (password !== confirmPassword) {
+            error.confirmPassword = "Password must match";
+          } else {
+            // Hash the password
+            const hashedPassword = await bcrypt.hash(password, 10);
+            // Update the user object with the hashed password
+            password = hashedPassword;
+          }
         }
       }
       if (Object.keys(error).length > 0) {
