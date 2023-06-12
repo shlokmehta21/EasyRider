@@ -64,8 +64,6 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
               if (Platform.OS === "android") {
                 setShow(false);
               }
-
-              console.log(currentDate);
               setFieldValue(fieldName, currentDate?.toDateString());
             }}
           />

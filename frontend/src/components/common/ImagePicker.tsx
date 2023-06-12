@@ -22,16 +22,21 @@ export const CustomImagePicker: React.FC<CustomImagePickerProps> = ({
     let result: any = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.All,
       allowsEditing: true,
+      base64: true,
       aspect: [4, 3],
-      quality: 1,
+      quality: 0,
     });
 
     if (!result.canceled) {
+      const image = {
+        fileSize: result?.assets[0].fileSize,
+        base64: result?.assets[0].base64,
+      };
+
+      console.log(result?.assets[0].fileSize);
+
       setImage(result?.assets[0].uri);
-      const response = await fetch(result.assets[0].uri);
-      const blob = await response.blob();
-      setFieldValue(fieldName, JSON.stringify(blob));
-      console.log(JSON.stringify(blob));
+      setFieldValue(fieldName, JSON.stringify(image));
     }
   };
 

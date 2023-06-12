@@ -11,6 +11,7 @@ const App: React.FC = () => {
       background: "white",
     },
   };
+
   return (
     <NavigationContainer theme={AppTheme}>
       <SafeAreaView style={styles.safeArea}>

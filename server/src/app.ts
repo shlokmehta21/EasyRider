@@ -21,7 +21,11 @@ class App {
   private initalizeMiddlewares() {
     this.app.use(SanitizeInput);
     this.app.use(express.static(path.join(__dirname, "../public")));
-    this.app.use(bodyParser.json());
+    this.app.use(
+      bodyParser.json({
+        limit: "10mb",
+      })
+    );
     this.app.use(bodyParser.urlencoded({ extended: true }));
   }
 

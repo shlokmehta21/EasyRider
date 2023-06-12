@@ -14,6 +14,7 @@ import * as Yup from "yup";
 import CustomDatePicker from "../components/common/CustomDatePicker";
 import { CustomImagePicker } from "../components/common/ImagePicker";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import axios from "axios";
 
 const ValidationSchema = Yup.object().shape({
   FirstName: Yup.string().required("First Name is Required"),
@@ -37,15 +38,110 @@ const ValidationSchema = Yup.object().shape({
   CollegeName: Yup.string().required("College Name is Required"),
   StartDate: Yup.string().required("Start Date is Required"),
   EndDate: Yup.string().required("End Date is Required"),
-  StudentID: Yup.string().required("Student ID is Required"),
+  // StudentID: Yup().required("Student ID is Required"),
 });
 
 export interface LoginProps {
   navigation: NativeStackNavigationProp<any, any>;
 }
 
+// interface User extends mongoose.Document {
+//   id?: string;
+//   firstName: string;
+//   lastName: string;
+//   email: string;
+// license?: {
+//   number: string;
+//   images: Buffer[];
+// };
+//   dob: number;
+//   password: string;
+//   confirmPassword: string;
+//   phoneNumber: string;
+//   locale?: string;
+// profilePicture?: Buffer;
+//   domain: Domain[];
+// car?: Car[];
+// }
+
+// interface Domain {
+//   id?: string;
+//   name: string;
+//   domainID: string;
+//   startDate: number;
+//   endDate?: number;
+//   images?: Buffer[];
+// }
+
+interface Car {
+  id?: string;
+  name: string;
+  model: string;
+  purchasedOn: number;
+  plateNo: string;
+  type?: string;
+  images?: Buffer[];
+}
+
+type CreateUserResponse = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  license?: {
+    number: string;
+    images: Buffer[];
+  };
+  dob: number;
+  password: string;
+  confirmPassword: string;
+  phoneNumber: string;
+  locale?: string;
+  profilePicture?: Buffer;
+  domain: [
+    {
+      name: string;
+      domainID: string;
+      startDate: number;
+      endDate?: number;
+      images?: Buffer;
+    }
+  ];
+  car?: Car[];
+};
+
 const Register: React.FC<LoginProps> = ({ navigation }) => {
   const [next, setNext] = useState(false);
+
+  async function createUser(userObject: CreateUserResponse) {
+    try {
+      const { data, status } = await axios.post<CreateUserResponse>(
+        "http://localhost:4000/register",
+        userObject,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+        }
+      );
+
+      console.log("RESPONSE", JSON.stringify(data, null, 4));
+
+      console.log(status);
+
+      return data;
+    } catch (error) {
+      console.log(error);
+
+      if (axios.isAxiosError(error)) {
+        console.log("error message: ", error.message);
+        return error.message;
+      } else {
+        console.log("unexpected error: ", error);
+        return "An unexpected error occurred";
+      }
+    }
+  }
 
   const loginButton = (
     <Pressable onPress={() => navigation.navigate("Login")}>
@@ -74,13 +170,35 @@ const Register: React.FC<LoginProps> = ({ navigation }) => {
             CollegeName: "",
             StartDate: "",
             EndDate: "",
-            StudentID: "",
+            StudentID: {},
             License: "",
           }}
           validationSchema={ValidationSchema}
           onSubmit={(values, { resetForm }) => {
-            console.log(values);
-            resetForm();
+            const userObject: CreateUserResponse = {
+              firstName: values.FirstName,
+              lastName: values.LastName,
+              email: values.Email,
+              dob: new Date(values.DOB).getTime(),
+              password: values.Password,
+              confirmPassword: values.ConfirmPassword,
+              phoneNumber: values.Phone,
+              domain: [
+                {
+                  name: values.CollegeName,
+                  domainID: "CC",
+                  startDate: new Date(values.StartDate).getTime(),
+                  endDate: new Date(values.EndDate).getTime(),
+                  images: values.StudentID as Buffer,
+                },
+              ],
+            };
+
+            console.log("USER OBJECT", userObject);
+
+            createUser(userObject);
+
+            // resetForm();
           }}
         >
           {({
@@ -222,9 +340,9 @@ const Register: React.FC<LoginProps> = ({ navigation }) => {
                     setFieldValue={setFieldValue}
                     fieldName="StudentID"
                   />
-                  {touched.StudentID && errors.StudentID && (
+                  {/* {touched.StudentID && errors.StudentID && (
                     <Text style={styles.errorMsg}>{errors.StudentID}</Text>
-                  )}
+                  )} */}
 
                   <CustomImagePicker
                     title="Upload License (G2/G)"

@@ -169,7 +169,10 @@ class RegisterController implements IController {
         );
         return;
       }
+      console.log(db.getModel().create(), user);
+
       const result = await db.getModel().create(user);
+
       if (result instanceof Error) {
         new ErrorController().handleError(
           {
@@ -181,6 +184,7 @@ class RegisterController implements IController {
         );
         return;
       }
+
       resp.status(200).json(true);
     } catch (err) {
       console.log(err);
