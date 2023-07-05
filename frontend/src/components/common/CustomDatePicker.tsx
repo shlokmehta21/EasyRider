@@ -3,7 +3,6 @@ import DatePicker, {
 } from "@react-native-community/datetimepicker";
 import React, { useState } from "react";
 import {
-  FlatList,
   Platform,
   Pressable,
   StyleSheet,

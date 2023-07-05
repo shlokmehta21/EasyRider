@@ -6,6 +6,8 @@ type CustomButtonProps = {
   color?: string;
   backGroundColor?: string;
   onPress?: () => void;
+  children?: React.ReactNode;
+  diabled?: boolean;
 };
 
 export const CustomButton: React.FC<CustomButtonProps> = ({
@@ -13,11 +15,20 @@ export const CustomButton: React.FC<CustomButtonProps> = ({
   color,
   backGroundColor,
   onPress,
+  children,
+  diabled,
 }) => {
   return (
-    <View style={[styles.container, { backgroundColor: backGroundColor }]}>
+    <View
+      style={[styles.container, { backgroundColor: backGroundColor }]}
+      pointerEvents={diabled ? "none" : "auto"}
+    >
       <TouchableOpacity onPress={onPress}>
-        <Text style={[styles.text, { color: color }]}>{title}</Text>
+        {children ? (
+          children
+        ) : (
+          <Text style={[styles.text, { color: color }]}>{title}</Text>
+        )}
       </TouchableOpacity>
     </View>
   );

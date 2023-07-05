@@ -23,7 +23,7 @@ class App {
     this.app.use(express.static(path.join(__dirname, "../public")));
     this.app.use(
       bodyParser.json({
-        limit: "10mb",
+        limit: "20mb",
       })
     );
     this.app.use(bodyParser.urlencoded({ extended: true }));

@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Pressable,
   ScrollView,
@@ -15,6 +17,8 @@ import CustomDatePicker from "../components/common/CustomDatePicker";
 import { CustomImagePicker } from "../components/common/ImagePicker";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import axios from "axios";
+import { CreateUserResponse } from "../types/CreateUserResponse";
+import { useMutation, useQueryClient } from "react-query";
 
 const ValidationSchema = Yup.object().shape({
   FirstName: Yup.string().required("First Name is Required"),
@@ -38,83 +42,20 @@ const ValidationSchema = Yup.object().shape({
   CollegeName: Yup.string().required("College Name is Required"),
   StartDate: Yup.string().required("Start Date is Required"),
   EndDate: Yup.string().required("End Date is Required"),
-  // StudentID: Yup().required("Student ID is Required"),
+  StudentID: Yup.string().required("Student ID is Required"),
 });
 
 export interface LoginProps {
   navigation: NativeStackNavigationProp<any, any>;
 }
 
-// interface User extends mongoose.Document {
-//   id?: string;
-//   firstName: string;
-//   lastName: string;
-//   email: string;
-// license?: {
-//   number: string;
-//   images: Buffer[];
-// };
-//   dob: number;
-//   password: string;
-//   confirmPassword: string;
-//   phoneNumber: string;
-//   locale?: string;
-// profilePicture?: Buffer;
-//   domain: Domain[];
-// car?: Car[];
-// }
-
-// interface Domain {
-//   id?: string;
-//   name: string;
-//   domainID: string;
-//   startDate: number;
-//   endDate?: number;
-//   images?: Buffer[];
-// }
-
-interface Car {
-  id?: string;
-  name: string;
-  model: string;
-  purchasedOn: number;
-  plateNo: string;
-  type?: string;
-  images?: Buffer[];
-}
-
-type CreateUserResponse = {
-  firstName: string;
-  lastName: string;
-  email: string;
-  license?: {
-    number: string;
-    images: Buffer[];
-  };
-  dob: number;
-  password: string;
-  confirmPassword: string;
-  phoneNumber: string;
-  locale?: string;
-  profilePicture?: Buffer;
-  domain: [
-    {
-      name: string;
-      domainID: string;
-      startDate: number;
-      endDate?: number;
-      images?: Buffer;
-    }
-  ];
-  car?: Car[];
-};
-
 const Register: React.FC<LoginProps> = ({ navigation }) => {
   const [next, setNext] = useState(false);
+  const queryClient = useQueryClient();
 
   async function createUser(userObject: CreateUserResponse) {
     try {
-      const { data, status } = await axios.post<CreateUserResponse>(
+      const { data } = await axios.post<CreateUserResponse>(
         "http://localhost:4000/register",
         userObject,
         {
@@ -124,11 +65,6 @@ const Register: React.FC<LoginProps> = ({ navigation }) => {
           },
         }
       );
-
-      console.log("RESPONSE", JSON.stringify(data, null, 4));
-
-      console.log(status);
-
       return data;
     } catch (error) {
       console.log(error);
@@ -143,6 +79,18 @@ const Register: React.FC<LoginProps> = ({ navigation }) => {
     }
   }
 
+  const { mutate, isLoading } = useMutation(createUser, {
+    onSuccess: (data) => {
+      console.log(data);
+      navigation.navigate("Login");
+      setNext(false);
+    },
+    onError: () => {},
+    onSettled: () => {
+      queryClient.invalidateQueries("create");
+    },
+  });
+
   const loginButton = (
     <Pressable onPress={() => navigation.navigate("Login")}>
       <Text style={styles.loginText}>
@@ -153,7 +101,7 @@ const Register: React.FC<LoginProps> = ({ navigation }) => {
   );
 
   return (
-    <KeyboardAvoidingView behavior="height">
+    <KeyboardAvoidingView>
       <ScrollView
         showsHorizontalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -170,15 +118,19 @@ const Register: React.FC<LoginProps> = ({ navigation }) => {
             CollegeName: "",
             StartDate: "",
             EndDate: "",
-            StudentID: {},
-            License: "",
+            StudentID: {} || null,
+            License: {},
           }}
           validationSchema={ValidationSchema}
-          onSubmit={(values, { resetForm }) => {
+          onSubmit={(values, { resetForm, setSubmitting }) => {
             const userObject: CreateUserResponse = {
               firstName: values.FirstName,
               lastName: values.LastName,
               email: values.Email,
+              license: {
+                number: "123456",
+                images: values.License as Buffer,
+              },
               dob: new Date(values.DOB).getTime(),
               password: values.Password,
               confirmPassword: values.ConfirmPassword,
@@ -194,19 +146,14 @@ const Register: React.FC<LoginProps> = ({ navigation }) => {
               ],
             };
 
-            console.log("USER OBJECT", userObject);
-
-            createUser(userObject);
-
-            // resetForm();
+            mutate(userObject);
+            resetForm();
           }}
         >
           {({
             values,
             errors,
             touched,
-            isSubmitting,
-            isValid,
             handleChange,
             handleSubmit,
             setFieldValue,
@@ -340,9 +287,9 @@ const Register: React.FC<LoginProps> = ({ navigation }) => {
                     setFieldValue={setFieldValue}
                     fieldName="StudentID"
                   />
-                  {/* {touched.StudentID && errors.StudentID && (
+                  {touched.StudentID && errors.StudentID && (
                     <Text style={styles.errorMsg}>{errors.StudentID}</Text>
-                  )} */}
+                  )}
 
                   <CustomImagePicker
                     title="Upload License (G2/G)"
@@ -365,9 +312,11 @@ const Register: React.FC<LoginProps> = ({ navigation }) => {
 
                   <CustomButton
                     title="Register"
+                    children={isLoading ? <ActivityIndicator /> : null}
                     onPress={handleSubmit}
                     backGroundColor="black"
                     color="white"
+                    diabled={isLoading ? true : false}
                   />
                 </>
               )}

@@ -94,7 +94,17 @@ class AuthController implements IController {
           userId: user.id,
           email: user.email,
         });
-        resp.status(200).setHeader("sessionId", sessionId).json(true);
+        // remove password from user object
+        const userObj = {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          license: user.license,
+          phoneNumber: user.phoneNumber,
+          sessionId: sessionId,
+        };
+        resp.status(200).setHeader("sessionId", sessionId).json(userObj);
       }
     } catch (err) {
       console.error(err);

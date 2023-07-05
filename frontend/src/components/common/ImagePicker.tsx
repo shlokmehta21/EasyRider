@@ -8,12 +8,14 @@ type CustomImagePickerProps = {
   title: string;
   fieldName: string;
   setFieldValue: (valueString: string, data: {} | undefined) => void;
+  submitted?: boolean;
 };
 
 export const CustomImagePicker: React.FC<CustomImagePickerProps> = ({
   title,
   setFieldValue,
   fieldName,
+  submitted,
 }) => {
   const [image, setImage] = useState(null);
 
@@ -39,6 +41,10 @@ export const CustomImagePicker: React.FC<CustomImagePickerProps> = ({
       setFieldValue(fieldName, JSON.stringify(image));
     }
   };
+
+  if (submitted === true) {
+    setImage(null);
+  }
 
   return (
     <Pressable style={styles.container} onPress={pickImage}>

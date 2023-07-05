@@ -4,6 +4,7 @@ import { Welcome } from "../screens/Welcome.screen";
 import Login from "../screens/Login.screen";
 import Register from "../screens/Register.screen";
 import ForgotPassword from "../screens/ForgotPassword.screen";
+import Home from "../screens/Home.screen";
 
 const Stack = createNativeStackNavigator();
 

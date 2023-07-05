@@ -1,23 +1,20 @@
-import React from "react";
+import React, { useContext } from "react";
 import { SafeAreaView, StyleSheet, Text, View } from "react-native";
-import { DefaultTheme, NavigationContainer } from "@react-navigation/native";
-import AuthStack from "./src/navigation/AuthStack";
+import { DefaultTheme } from "@react-navigation/native";
+import { QueryClient, QueryClientProvider } from "react-query";
+import { UserContext, UserProvider } from "./src/context/UserContext";
+import AppNav from "./src/navigation/AppNav";
 
 const App: React.FC = () => {
-  const AppTheme = {
-    ...DefaultTheme,
-    colors: {
-      ...DefaultTheme.colors,
-      background: "white",
-    },
-  };
-
+  const queryClient = new QueryClient();
   return (
-    <NavigationContainer theme={AppTheme}>
-      <SafeAreaView style={styles.safeArea}>
-        <AuthStack />
-      </SafeAreaView>
-    </NavigationContainer>
+    <QueryClientProvider client={queryClient}>
+      <UserProvider>
+        <SafeAreaView style={styles.safeArea}>
+          <AppNav />
+        </SafeAreaView>
+      </UserProvider>
+    </QueryClientProvider>
   );
 };
 

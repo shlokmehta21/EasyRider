@@ -1,10 +1,20 @@
-import React from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import React, { useContext } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { CustomInput } from "../components/common/CustomInput";
 import { CustomButton } from "../components/common/CustomButton";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import axios from "axios";
+import { useMutation, useQueryClient } from "react-query";
+import { UserContext } from "../context/UserContext";
 
 const ValidationSchema = Yup.object().shape({
   Email: Yup.string().email("Invalid email").required("Email is Required"),
@@ -18,7 +28,79 @@ export interface LoginProps {
   navigation: NativeStackNavigationProp<any, any>;
 }
 
+interface LoginUserResponse {
+  id?: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  password: string;
+  license?: {
+    images?: [];
+    number?: string;
+  };
+  phoneNumber?: string;
+  sessionId?: string;
+}
+
 const Login: React.FC<LoginProps> = ({ navigation }) => {
+  const queryClient = useQueryClient();
+  const { setUser, setIsLogged, user } = useContext(UserContext);
+
+  async function loginUser(userObject: LoginUserResponse) {
+    try {
+      const { data, headers } = await axios.post<LoginUserResponse>(
+        "http://localhost:4000/login",
+        userObject,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+        }
+      );
+      console.log(headers.sessionid);
+
+      const userObj = {
+        id: data.id,
+        email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        license: data.license,
+        phone: data.phoneNumber,
+        sessionId: headers.sessionid,
+      };
+
+      // @ts-ignore
+      setUser(userObj);
+      // @ts-ignore
+      setIsLogged(true);
+
+      return data;
+    } catch (error) {
+      console.log(error);
+
+      if (axios.isAxiosError(error)) {
+        console.log("error message: ", error.message);
+        return error.message;
+      } else {
+        console.log("unexpected error: ", error);
+        return "An unexpected error occurred";
+      }
+    }
+  }
+
+  const { mutate, isLoading } = useMutation(loginUser, {
+    onSuccess: (data) => {
+      console.log(data);
+    },
+    onError: () => {},
+    onSettled: () => {
+      queryClient.invalidateQueries("create");
+    },
+  });
+
+  console.log("USER", user);
+
   return (
     <ScrollView
       showsHorizontalScrollIndicator={false}
@@ -31,19 +113,15 @@ const Login: React.FC<LoginProps> = ({ navigation }) => {
         }}
         validationSchema={ValidationSchema}
         onSubmit={(values, { resetForm }) => {
-          console.log(values);
+          const userObject = {
+            email: values.Email,
+            password: values.Password,
+          };
+          mutate(userObject);
           resetForm();
         }}
       >
-        {({
-          values,
-          errors,
-          touched,
-          isSubmitting,
-          isValid,
-          handleChange,
-          handleSubmit,
-        }) => (
+        {({ values, errors, touched, handleChange, handleSubmit }) => (
           <View style={styles.container}>
             <Text style={styles.title}>Login</Text>
             <CustomInput
@@ -74,9 +152,11 @@ const Login: React.FC<LoginProps> = ({ navigation }) => {
 
             <CustomButton
               title="Login"
+              children={isLoading ? <ActivityIndicator /> : null}
               onPress={handleSubmit}
               backGroundColor="black"
               color="white"
+              diabled={isLoading ? true : false}
             />
 
             <Pressable onPress={() => navigation.navigate("Register")}>
