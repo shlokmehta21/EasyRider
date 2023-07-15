@@ -15,6 +15,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import axios from "axios";
 import { useMutation, useQueryClient } from "react-query";
 import { UserContext } from "../context/UserContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const ValidationSchema = Yup.object().shape({
   Email: Yup.string().email("Invalid email").required("Email is Required"),
@@ -46,6 +47,18 @@ const Login: React.FC<LoginProps> = ({ navigation }) => {
   const queryClient = useQueryClient();
   const { setUser, setIsLogged, user } = useContext(UserContext);
 
+  const setAppData = async (userSession: string): Promise<void> => {
+    try {
+      const result = await AsyncStorage.setItem(
+        "userSession",
+        userSession as string
+      );
+      console.log(result);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   async function loginUser(userObject: LoginUserResponse) {
     try {
       const { data, headers } = await axios.post<LoginUserResponse>(
@@ -69,6 +82,8 @@ const Login: React.FC<LoginProps> = ({ navigation }) => {
         phone: data.phoneNumber,
         sessionId: headers.sessionid,
       };
+
+      setAppData(headers.sessionid);
 
       // @ts-ignore
       setUser(userObj);
@@ -99,8 +114,6 @@ const Login: React.FC<LoginProps> = ({ navigation }) => {
     },
   });
 
-  console.log("USER", user);
-
   return (
     <ScrollView
       showsHorizontalScrollIndicator={false}
@@ -129,6 +142,7 @@ const Login: React.FC<LoginProps> = ({ navigation }) => {
               secureTextEntry={false}
               value={values.Email}
               onTextChange={handleChange("Email")}
+              autoCapitalizeEmail="none"
             />
             {touched.Email && errors.Email && (
               <Text style={styles.errorMsg}>{errors.Email}</Text>

@@ -10,6 +10,12 @@ type CustomInputProps = {
   onPressIn?: () => void;
   keyboardType?: KeyboardTypeOptions;
   maxLength?: number;
+  autoCapitalizeEmail?:
+    | "none"
+    | "sentences"
+    | "words"
+    | "characters"
+    | undefined;
 };
 
 export const CustomInput: React.FC<CustomInputProps> = ({
@@ -21,6 +27,7 @@ export const CustomInput: React.FC<CustomInputProps> = ({
   onPressIn,
   keyboardType,
   maxLength,
+  autoCapitalizeEmail,
 }) => {
   return (
     <View style={styles.container}>
@@ -35,6 +42,7 @@ export const CustomInput: React.FC<CustomInputProps> = ({
         keyboardType={keyboardType}
         maxLength={maxLength}
         placeholderTextColor="#919090"
+        autoCapitalize={autoCapitalizeEmail}
       />
     </View>
   );

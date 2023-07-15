@@ -129,7 +129,7 @@ const Register: React.FC<LoginProps> = ({ navigation }) => {
               email: values.Email,
               license: {
                 number: "123456",
-                images: values.License as Buffer,
+                images: values.License ? [values.License as Buffer] : [{}],
               },
               dob: new Date(values.DOB).getTime(),
               password: values.Password,
@@ -147,7 +147,7 @@ const Register: React.FC<LoginProps> = ({ navigation }) => {
             };
 
             mutate(userObject);
-            resetForm();
+            // resetForm();
           }}
         >
           {({
@@ -199,6 +199,7 @@ const Register: React.FC<LoginProps> = ({ navigation }) => {
                     secureTextEntry={false}
                     value={values.Email}
                     onTextChange={handleChange("Email")}
+                    autoCapitalizeEmail="none"
                   />
                   {touched.Email && errors.Email && (
                     <Text style={styles.errorMsg}>{errors.Email}</Text>

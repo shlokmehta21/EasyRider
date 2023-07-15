@@ -1,4 +1,4 @@
-import { FC } from "react";
+import { FC, useContext } from "react";
 import { Pressable, StyleSheet, Switch, Text, View } from "react-native";
 import {
   Ionicons,
@@ -9,12 +9,57 @@ import {
 } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { CustomButton } from "../components/common/CustomButton";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { UserContext } from "../context/UserContext";
+import axios from "axios";
 
 interface Settings {
   navigation: NativeStackNavigationProp<any, any>;
 }
 
 const Settings: FC<Settings> = ({ navigation }) => {
+  const { setIsLogged, setUserSessionID, userSessionID } =
+    useContext(UserContext);
+
+  async function logOutUser() {
+    try {
+      const { data } = await axios.get("http://localhost:4000/logout", {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          sessionid: userSessionID,
+        },
+      });
+      return data;
+    } catch (error) {
+      console.log(error);
+      if (axios.isAxiosError(error)) {
+        console.log("error message: ", error.message);
+        return error.message;
+      } else {
+        console.log("unexpected error: ", error);
+        return "An unexpected error occurred";
+      }
+    }
+  }
+
+  const OnLogout = async () => {
+    if (userSessionID) {
+      try {
+        logOutUser();
+
+        const result = await AsyncStorage.removeItem("userSession");
+        // @ts-ignore
+        setIsLogged(false);
+        // @ts-ignore
+        setUserSessionID(null);
+        console.log(result);
+      } catch (error) {
+        console.log(error);
+      }
+    }
+  };
+
   return (
     <>
       <View style={styles.container}>
@@ -62,7 +107,7 @@ const Settings: FC<Settings> = ({ navigation }) => {
         </View>
         <CustomButton
           title="Logout"
-          //   onPress={}
+          onPress={OnLogout}
           backGroundColor="#eb5d44"
           color="white"
         />

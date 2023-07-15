@@ -6,7 +6,7 @@ export type CreateUserResponse = {
   email: string;
   license?: {
     number: string;
-    images: Buffer;
+    images: Buffer[] | {}[];
   };
   dob: number;
   password: string;
