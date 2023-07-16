@@ -82,39 +82,44 @@ const userSchema = new mongoose.Schema({
       },
     },
   ],
-  car: [
-    {
-      id: {
-        type: String,
-        required: true,
-        default: uuidv4(),
-      },
-      name: {
-        type: String,
-        required: true,
-      },
-      model: {
-        type: String,
-        required: true,
-      },
-      purchasedOn: {
-        type: Number,
-        required: true,
-      },
-      images: {
-        type: [Buffer],
-        required: true,
-      },
-      type: {
-        type: String,
-        required: true,
-      },
-      plateNo: {
-        type: String,
-        required: true,
-      },
+  car: {
+    id: {
+      type: String,
+      default: uuidv4(),
     },
-  ],
+    name: {
+      type: String,
+      required: true,
+    },
+    model: {
+      type: String,
+      required: true,
+    },
+    purchasedOn: {
+      type: Number,
+      required: true,
+    },
+    images: {
+      type: [Buffer],
+      required: true,
+    },
+    type: {
+      type: String,
+      required: true,
+    },
+    plateNo: {
+      type: String,
+      required: true,
+    },
+  },
+  location: {
+    lat: {
+      type: Number,
+    },
+    long: {
+      type: Number,
+    },
+  },
 });
 
 const UserDB: mongoose.Model<User, UserModel> = mongoose.model<User, UserModel>(

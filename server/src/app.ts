@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Application, Router } from "express";
 import * as bodyParser from "body-parser";
 import IController from "./models/interfaces/IController";
 import path from "path";
@@ -6,33 +6,37 @@ import SanitizeInput from "./middlewares/sanitizeInput";
 import "./db/db";
 
 class App {
-  public app: express.Application;
+  public app: Application;
   public port: number;
 
   constructor(controllers: Array<IController>, port: number) {
     this.app = express();
     this.port = port;
 
-    //
-    this.initalizeMiddlewares();
+    this.initializeMiddlewares();
     this.initializeControllers(controllers);
   }
 
-  private initalizeMiddlewares() {
-    this.app.use(SanitizeInput);
+  private initializeMiddlewares() {
     this.app.use(express.static(path.join(__dirname, "../public")));
     this.app.use(
       bodyParser.json({
-        limit: "20mb",
+        limit: "10mb",
       })
     );
     this.app.use(bodyParser.urlencoded({ extended: true }));
+    this.app.use(SanitizeInput);
   }
 
   private initializeControllers(controllers: Array<IController>) {
+    const router = Router();
+
     controllers.forEach((controller: IController) => {
-      this.app.use("/", controller.router);
+      controller.initializeRoutes();
+      router.use("/", controller.router);
     });
+
+    this.app.use(router);
   }
 
   public listen() {

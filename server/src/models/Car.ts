@@ -4,8 +4,9 @@ interface Car {
   model: string;
   purchasedOn: number;
   plateNo: string;
-  type?: string;
-  images?: Buffer[];
+  type: string;
+  images: Buffer[];
+  seatsAvailable: number;
 }
 
 export default Car;

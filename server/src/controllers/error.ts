@@ -13,6 +13,18 @@ class ErrorController {
 
     res.status(statusCode).json({ error: errorMessage });
   }
+
+  handleInvalidRequest(res: Response) {
+    res.status(400).json({ error: "Invalid Request" });
+  }
+
+  handleInternalServer(res: Response) {
+    res.status(500).json({ error: "Internal Server Occurred" });
+  }
+
+  handleUnAuthorizedRequest(res: Response) {
+    res.status(401).json({ error: "UnAuthorized Request" });
+  }
 }
 
 export default ErrorController;

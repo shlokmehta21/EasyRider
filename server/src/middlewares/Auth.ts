@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import ErrorController from "../controllers/error";
+import ErrorController from "../controllers/Error";
 import UserSession from "../utils/session";
 
 function CheckUserAuthentication(
@@ -7,8 +7,9 @@ function CheckUserAuthentication(
   resp: Response,
   next: NextFunction
 ) {
-  const sessionId = req.headers.sessionid as string;
-  if (!sessionId) {
+  const sessionid = req.headers.sessionid as string;
+  const session = new UserSession();
+  if (!sessionid) {
     new ErrorController().handleError(
       { code: 401, message: "Invalid Session" },
       req,
@@ -16,14 +17,20 @@ function CheckUserAuthentication(
       next
     );
   } else {
-    const isValid: boolean = new UserSession().validateSession(sessionId);
-    if (!isValid) {
+    try {
+      const sessionId: string = session.validateSessionAndUpdate(sessionid);
+      resp.setHeader("sessionid", sessionId);
+      next();
+    } catch (err: any) {
+      resp.setHeader("sessionid", "");
       new ErrorController().handleError(
-        { code: 401, message: "Invalid Session" },
+        { code: 401, message: err.message },
         req,
         resp,
         next
       );
-    } else next();
+    }
   }
 }
+
+export default CheckUserAuthentication;

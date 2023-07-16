@@ -1,7 +1,7 @@
-import express, { NextFunction, Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import sanitize from "sanitize-html";
 
-export default function SanitizeInput(
+export default function sanitizeInput(
   req: Request,
   _: Response,
   next: NextFunction
@@ -10,15 +10,30 @@ export default function SanitizeInput(
     allowedTags: [],
     allowedAttributes: {},
   };
+
   if (req.body) {
-    req.body = sanitize(req.body, _options);
+    req.body = sanitizeInputs(req.body, _options);
   }
+
   if (req.query) {
-    Object.keys(req.query).forEach((param: string) => {
-      if (req.query[param] && typeof req.query[param] === "string") {
-        req.query[param] = sanitize(req.query[param] as string, _options);
-      }
-    });
+    req.query = sanitizeInputs(req.query, _options);
   }
+
   next();
+}
+
+function sanitizeInputs(data: any, options: sanitize.IOptions): any {
+  if (typeof data === "string") {
+    return sanitize(data, options).trim();
+  } else if (Array.isArray(data)) {
+    return data.map((item) =>
+      typeof item === "string" ? sanitize(item, options).trim() : item
+    );
+  } else if (typeof data === "object") {
+    for (const key in data) {
+      data[key] = sanitizeInputs(data[key], options);
+    }
+  }
+
+  return data;
 }

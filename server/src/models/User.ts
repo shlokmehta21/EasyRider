@@ -17,7 +17,11 @@ interface User extends mongoose.Document {
   locale?: string;
   profilePicture?: Buffer;
   domain: Domain[];
-  car?: Car[];
+  car?: Car;
+  location: {
+    lat: number;
+    long: number;
+  };
 }
 
 interface Domain {

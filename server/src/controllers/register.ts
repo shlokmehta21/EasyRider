@@ -1,19 +1,20 @@
-import express, { Request, Response } from "express";
-import moment from "moment";
+import { Request, Response, Router } from "express";
 import IController from "../models/interfaces/IController";
 import User from "../models/User";
 import { registerErrorLabels } from "../utils/label";
 import { regex } from "../utils/regex";
 import routes from "../utils/routesConfig";
-import ErrorController from "./error";
+import ErrorController from "./Error";
 import bcrypt from "bcrypt";
 import UserDbModel from "../schemas/User";
+import { validDateChecker } from "../utils/date";
 
 class RegisterController implements IController {
-  router: express.Router = express.Router();
+  router: Router;
   path: string = routes.REGISTER as string;
 
   constructor() {
+    this.router = Router();
     this.initializeRoutes();
   }
 
@@ -26,45 +27,55 @@ class RegisterController implements IController {
     const error: { [key: string]: string } = {};
 
     // firstName validation
-    if (!user.firstName) {
+    if (!user.firstName || !user.firstName.trim()) {
       error.firstName = "First Name is required";
-    } else if (user.firstName.length <= 2) {
-      error.firstName = "First Name must contain 3 chars";
-    } else if (
-      !regex.ALPHANUMERIC_WITH_STARTING_WITH_LETTER.test(user.firstName)
-    ) {
-      error.firstName = "First Name must start with a letter.";
+    } else {
+      user.firstName = user.firstName.trim();
+      if (user.firstName.length <= 2) {
+        error.firstName = "First Name must contain 3 chars";
+      } else if (
+        !regex.ALPHANUMERIC_WITH_STARTING_WITH_LETTER.test(user.firstName)
+      ) {
+        error.firstName = "First Name must start with a letter.";
+      }
     }
-
     // lastName validation
-    if (!user.lastName) {
+    if (!user.lastName || !user.lastName.trim()) {
       error.lastName = "Last Name is required";
-    } else if (user.lastName.length <= 2) {
-      error.lastName = "Last Name must contain 3 chars";
-    } else if (
-      !regex.ALPHANUMERIC_WITH_STARTING_WITH_LETTER.test(user.lastName)
-    ) {
-      error.lastName = "Last Name must start with a letter";
+    } else {
+      user.lastName = user.lastName.trim();
+
+      if (user.lastName.length <= 2) {
+        error.lastName = "Last Name must contain 3 chars";
+      } else if (
+        !regex.ALPHANUMERIC_WITH_STARTING_WITH_LETTER.test(user.lastName)
+      ) {
+        error.lastName = "Last Name must start with a letter";
+      }
     }
 
     // Email validation
-    if (!user.email) {
+    if (!user.email || !user.email.trim()) {
       error.email = "Email ID is required";
-    } else if (!regex.EMAIL.test(user.email)) {
-      error.email = "Invalid Email ID";
+    } else {
+      user.email = user.email.trim();
+      if (!regex.EMAIL.test(user.email)) {
+        error.email = "Invalid Email ID";
+      }
     }
 
     // dob validation
     if (!user.dob) {
       error.dob = "Date of Birth is required";
-    } else if (!this.validDateChecker(user.dob)) {
+    } else if (!validDateChecker(user.dob)) {
       error.dob = "Date of Birth is Invalid";
     }
 
     // password validation
-    if (!user.password) {
+    if (!user.password || !user.password.trim()) {
       error.password = "Password is required";
     } else {
+      user.password = user.password.trim();
       if (user.password.length < 6) {
         error.password = "Password must be at least 6 characters long";
       } else if (!/[a-z]/.test(user.password)) {
@@ -112,14 +123,19 @@ class RegisterController implements IController {
         error.domain = "Domain Details is required";
       } else {
         // domain name validation
-        if (!domainDetails.name) {
+        if (!domainDetails.name || !domainDetails.name.trim()) {
           error.domainName = "Name is required";
-        } else if (domainDetails.name.length <= 2) {
-          error.domainName = "Name must contain 3 chars";
-        } else if (
-          !regex.ALPHANUMERIC_WITH_STARTING_WITH_LETTER.test(domainDetails.name)
-        ) {
-          error.domainName = "Name must be Alphanumeric";
+        } else {
+          domainDetails.name = domainDetails.name.trim();
+          if (domainDetails.name.length <= 2) {
+            error.domainName = "Name must contain 3 chars";
+          } else if (
+            !regex.ALPHANUMERIC_WITH_STARTING_WITH_LETTER.test(
+              domainDetails.name
+            )
+          ) {
+            error.domainName = "Name must be Alphanumeric";
+          }
         }
 
         // domain ID validation
@@ -130,20 +146,17 @@ class RegisterController implements IController {
         // domain start date validation
         if (!domainDetails.startDate) {
           error.domainStartDate = "Start Date is required";
-        } else if (!this.validDateChecker(domainDetails.startDate)) {
+        } else if (!validDateChecker(domainDetails.startDate)) {
           error.domainStartDate = "Start Date is Invalid";
         }
 
         // domain end date validation
-        if (
-          domainDetails.endDate &&
-          !this.validDateChecker(domainDetails.endDate)
-        ) {
+        if (domainDetails.endDate && !validDateChecker(domainDetails.endDate)) {
           error.domainEndDate = "End Date is Invalid";
         }
 
         // domain images validation
-        if (domainDetails.images && domainDetails.images.length < 2) {
+        if (!domainDetails.images || domainDetails.images.length < 2) {
           error.domainIDImages = "Front and Back side images are required";
         }
       }
@@ -151,8 +164,15 @@ class RegisterController implements IController {
 
     try {
       if (Object.keys(error).length > 0) {
-        console.log("Invalid Input", error);
-        throw new Error("Invalid Input");
+        new ErrorController().handleError(
+          {
+            code: 400,
+            customMessage: error,
+          },
+          req,
+          resp
+        );
+        return;
       }
       const db = new UserDbModel();
       const isUserExists: boolean = await db.findIfExists({
@@ -169,8 +189,6 @@ class RegisterController implements IController {
         );
         return;
       }
-      console.log(db.getModel().create(), user);
-
       const result = await db.getModel().create(user);
 
       if (result instanceof Error) {
@@ -198,14 +216,6 @@ class RegisterController implements IController {
       );
     }
   };
-
-  validDateChecker(date: number): boolean {
-    try {
-      return moment(date).isValid();
-    } catch (err) {
-      return false;
-    }
-  }
 }
 
 export default RegisterController;

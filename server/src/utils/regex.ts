@@ -5,4 +5,5 @@ export const regex = {
   EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
   PASSWORD:
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/,
+  CONTAINS_ALPHANUMERIC: /^[a-zA-Z0-9]+$/,
 };

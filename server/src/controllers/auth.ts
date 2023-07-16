@@ -1,18 +1,19 @@
-import express, { Request, Response, Router } from "express";
-import IController from "../models/interfaces/IController";
-import { regex } from "../utils/regex";
+import { Request, Response, Router } from "express";
 import routes from "../utils/routesConfig";
-import bcrypt from "bcrypt";
 import UserDbModel from "../schemas/User";
 import User from "../models/User";
-import ErrorController from "./error";
+import ErrorController from "./Error";
 import UserSession from "../utils/session";
+import { regex } from "../utils/regex";
+import bcrypt from "bcrypt";
+import IController from "../models/interfaces/IController";
 
 class AuthController implements IController {
-  router: Router = express.Router();
+  router: Router;
   path: string = routes.LOGIN as string;
 
   constructor() {
+    this.router = Router();
     this.initializeRoutes();
   }
 
@@ -23,7 +24,16 @@ class AuthController implements IController {
 
   logout(req: Request, resp: Response): void {
     try {
-      if (req.headers.sessionid) {
+      const sessionid: string = req.headers.sessionid as string;
+      if (sessionid) {
+        if (!new UserSession().validateSession(sessionid)) {
+          new ErrorController().handleError(
+            { code: 400, message: "Invalid session" },
+            req,
+            resp
+          );
+          return;
+        }
         delete req.headers.sessionid;
         resp.status(200).json(true);
       } else {
@@ -33,7 +43,6 @@ class AuthController implements IController {
           resp
         );
       }
-      return;
     } catch (err) {
       console.log(err);
       new ErrorController().handleError(
@@ -45,13 +54,13 @@ class AuthController implements IController {
   }
 
   async login(req: Request, resp: Response): Promise<void> {
-    const sessionId = req.headers.sessionid as string;
-    if (sessionId) {
+    const sessionid = req.headers.sessionid as string;
+    if (sessionid && new UserSession().validateSessionAndUpdate(sessionid)) {
       resp.status(202).json(true);
       return;
     }
 
-    const { email, password } = req.body;
+    const { email, password }: { email: string; password: string } = req.body;
     const error: { [key: string]: string } = {};
 
     // email validation
