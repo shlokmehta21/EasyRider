@@ -16,6 +16,7 @@ import axios from "axios";
 import { useMutation, useQueryClient } from "react-query";
 import { UserContext } from "../context/UserContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import jwt_decode from "jwt-decode";
 
 const ValidationSchema = Yup.object().shape({
   Email: Yup.string().email("Invalid email").required("Email is Required"),
@@ -73,22 +74,16 @@ const Login: React.FC<LoginProps> = ({ navigation }) => {
       );
       console.log(headers.sessionid);
 
-      const userObj = {
-        id: data.id,
-        email: data.email,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        license: data.license,
-        phone: data.phoneNumber,
-        sessionId: headers.sessionid,
-      };
+      const decoded: any = jwt_decode(headers.sessionid);
 
-      setAppData(headers.sessionid);
+      console.log(decoded);
 
-      // @ts-ignore
-      setUser(userObj);
-      // @ts-ignore
-      setIsLogged(true);
+      // setAppData(headers.sessionid);
+
+      // // @ts-ignore
+      // setUser(userObj);
+      // // @ts-ignore
+      // setIsLogged(true);
 
       return data;
     } catch (error) {
