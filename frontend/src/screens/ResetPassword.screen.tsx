@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import { Formik } from "formik";
+import { FC } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -8,31 +9,48 @@ import {
   View,
 } from "react-native";
 import { CustomInput } from "../components/common/CustomInput";
-import { CustomButton } from "../components/common/CustomButton";
-import { Formik } from "formik";
-import * as Yup from "yup";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { CustomButton } from "../components/common/CustomButton";
 import { useMutation, useQueryClient } from "react-query";
+import { useRoute } from "@react-navigation/native";
 import axios from "axios";
+import * as Yup from "yup";
 
 const ValidationSchema = Yup.object().shape({
   Email: Yup.string().email("Invalid email").required("Email is Required"),
+  Password: Yup.string()
+    .required("Required")
+    .min(6, "Must be 6 characters or more")
+    .matches(/[a-z]+/, "One lowercase character")
+    .matches(/[A-Z]+/, "One uppercase character")
+    .matches(/[@$!%*#?&]+/, "One special character")
+    .matches(/\d+/, "One number"),
+  ConfirmPassword: Yup.string().oneOf(
+    [Yup.ref("Password")],
+    "Passwords must match"
+  ),
 });
 
-export interface ForgotPassword {
+interface RestPassword {
   navigation: NativeStackNavigationProp<any, any>;
 }
 
-const ForgotPassword: React.FC<ForgotPassword> = ({ navigation }) => {
-  const [token, setToken] = useState("");
-  const [email, setEmail] = useState("");
+type UserRest = {
+  password: string;
+  confirmPassword: string;
+};
+
+const ResetPassword: FC<RestPassword> = ({ navigation }) => {
+  const route = useRoute();
+  const params = route.params;
   const queryClient = useQueryClient();
 
-  async function findUser(FindEmail: string) {
+  async function resetPassword(obj: UserRest) {
     try {
       const { data } = await axios.post(
-        "http://localhost:4000/forgot-password",
-        { email: FindEmail },
+        // @ts-ignore
+        `http://localhost:4000/reset-password/${params?.token}`,
+        obj,
         {
           headers: {
             "Content-Type": "application/json",
@@ -40,14 +58,12 @@ const ForgotPassword: React.FC<ForgotPassword> = ({ navigation }) => {
           },
         }
       );
+
       return data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
         if (error.response) {
-          const regex = /\/reset-password\/([^/]+)/;
-          const match = regex.exec(error.response.data.error);
-          const tokenwithText = match ? match[1] : null;
-          setToken(tokenwithText?.split(" ")[0] as string);
+          console.log(error.response.data);
         }
       } else {
         console.log("unexpected error: ", error);
@@ -56,9 +72,10 @@ const ForgotPassword: React.FC<ForgotPassword> = ({ navigation }) => {
     }
   }
 
-  const { mutate, isLoading } = useMutation(findUser, {
+  const { mutate, isLoading } = useMutation(resetPassword, {
     onSuccess: (data) => {
       console.log(data);
+      navigation.navigate("Login");
     },
     onError: () => {},
     onSettled: () => {
@@ -66,27 +83,25 @@ const ForgotPassword: React.FC<ForgotPassword> = ({ navigation }) => {
     },
   });
 
-  useEffect(() => {
-    if (token !== "") {
-      navigation.navigate("ResetPassword", { token, email });
-    }
-  }, [token]);
-
   return (
     <ScrollView
       showsHorizontalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >
       <Formik
+        enableReinitialize={true}
         initialValues={{
-          FindEmail: "",
+          //@ts-ignore
+          Email: params?.email as string,
+          Password: "",
+          ConfirmPassword: "",
         }}
-        // validationSchema={ValidationSchema}
+        validationSchema={ValidationSchema}
         onSubmit={(values, { resetForm }) => {
           console.log(values);
-          setEmail(values.FindEmail);
-          mutate(values.FindEmail);
-          // resetForm();
+          const { Password, ConfirmPassword } = values;
+          mutate({ password: Password, confirmPassword: ConfirmPassword });
+          resetForm();
         }}
       >
         {({ values, errors, touched, handleChange, handleSubmit }) => (
@@ -95,16 +110,40 @@ const ForgotPassword: React.FC<ForgotPassword> = ({ navigation }) => {
             <CustomInput
               placeholder="Email"
               secureTextEntry={false}
-              value={values.FindEmail}
-              onTextChange={handleChange("FindEmail")}
+              value={values.Email}
+              onTextChange={handleChange("Email")}
               autoCapitalizeEmail="none"
             />
-            {touched.FindEmail && errors.FindEmail && (
-              <Text style={styles.errorMsg}>{errors.FindEmail}</Text>
+            {touched.Email && errors.Email && (
+              <Text style={styles.errorMsg}>{errors.Email}</Text>
+            )}
+
+            <>
+              <CustomInput
+                placeholder="Password"
+                secureTextEntry={true}
+                value={values.Password}
+                onTextChange={handleChange("Password")}
+              />
+
+              {touched.Password && errors.Password && (
+                <Text style={styles.errorMsg}>{errors.Password}</Text>
+              )}
+
+              <CustomInput
+                placeholder="Confirm Password"
+                secureTextEntry={true}
+                value={values.ConfirmPassword}
+                onTextChange={handleChange("ConfirmPassword")}
+              />
+            </>
+
+            {touched.ConfirmPassword && errors.ConfirmPassword && (
+              <Text style={styles.errorMsg}>{errors.ConfirmPassword}</Text>
             )}
 
             <CustomButton
-              title="Find Account"
+              title="Rest Password"
               onPress={handleSubmit}
               children={isLoading ? <ActivityIndicator /> : null}
               backGroundColor="black"
@@ -123,7 +162,7 @@ const ForgotPassword: React.FC<ForgotPassword> = ({ navigation }) => {
   );
 };
 
-export default ForgotPassword;
+export default ResetPassword;
 
 const styles = StyleSheet.create({
   container: {
