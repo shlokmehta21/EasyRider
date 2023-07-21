@@ -32,6 +32,7 @@ class Location implements IController {
         req,
         resp
       );
+      return;
     }
 
     // Update the user document with the new location

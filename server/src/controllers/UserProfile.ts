@@ -102,9 +102,6 @@ class UserProfile implements IController {
 
   forgotPassword = async (req: Request, resp: Response): Promise<void> => {
     const { email }: { email: string } = req.body;
-
-    console.log(email);
-
     const errors: { [key: string]: string } = {};
     if (!email) {
       errors.email = "Email ID is required";

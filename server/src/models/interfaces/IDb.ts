@@ -35,6 +35,17 @@ class IDb<T extends Document, M extends Model<T, {}>> {
     }
   }
 
+  async findOneByParamsAndDelete(params: object): Promise<T | null> {
+    try {
+      const obj: T | null = await this.model.findOneAndRemove(params);
+      if (obj !== null) {
+        return obj;
+      } else return null;
+    } catch (err) {
+      throw new Error("Failed to delete the object using Params");
+    }
+  }
+
   async findByParamsAndUpdate(
     params: object,
     updateFields: object
