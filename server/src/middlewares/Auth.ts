@@ -7,28 +7,42 @@ function CheckUserAuthentication(
   resp: Response,
   next: NextFunction
 ) {
-  const sessionid = req.headers.sessionid as string;
-  const session = new UserSession();
+  const sessionid = req.cookies.sessionid as string;
   if (!sessionid) {
     new ErrorController().handleError(
-      { code: 401, message: "Invalid Session" },
+      { code: 401, message: "Session ID is missing" },
       req,
       resp,
       next
     );
   } else {
+    const session = new UserSession();
     try {
-      const sessionId: string = session.validateSessionAndUpdate(sessionid);
-      resp.setHeader("sessionid", sessionId);
+      const updatedSessionId: string =
+        session.validateSessionAndUpdate(sessionid);
+      resp.cookie("sessionid", updatedSessionId, {
+        httpOnly: true,
+        // secure: true,
+        sameSite: "strict",
+      });
       next();
     } catch (err: any) {
-      resp.setHeader("sessionid", "");
-      new ErrorController().handleError(
-        { code: 401, message: err.message },
-        req,
-        resp,
-        next
-      );
+      // Handle specific error cases for invalid or expired sessions
+      if (err.name === "SessionExpiredError") {
+        new ErrorController().handleError(
+          { code: 401, message: "Session has expired" },
+          req,
+          resp,
+          next
+        );
+      } else {
+        new ErrorController().handleError(
+          { code: 401, message: "Invalid Session ID" },
+          req,
+          resp,
+          next
+        );
+      }
     }
   }
 }

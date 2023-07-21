@@ -4,6 +4,6 @@ export interface Car {
   model: string;
   purchasedOn: number;
   plateNo: string;
-  type?: string;
+  carType: string;
   images?: Buffer[];
 }

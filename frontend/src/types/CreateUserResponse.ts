@@ -23,5 +23,5 @@ export type CreateUserResponse = {
       images?: Buffer;
     }
   ];
-  car?: Car[];
+  car?: Car;
 };

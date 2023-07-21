@@ -9,10 +9,11 @@ import UserSession from "../utils/session";
 import CheckUserAuthentication from "../middlewares/Auth";
 
 class Location implements IController {
-  router: Router = Router();
+  router: Router;
   path: RouteConfig = routes.LOCATION as RouteConfig;
 
   constructor() {
+    this.router = Router();
     this.initializeRoutes();
   }
 
@@ -23,7 +24,7 @@ class Location implements IController {
 
   update(req: Request, resp: Response): void {
     const { lat, long }: { lat: number; long: number } = req.body;
-    const sessionId: string = req.headers.sessionId as string;
+    const sessionId: string = req.cookies.sessionId as string;
     const data: User = new UserSession().getSessionData(sessionId) as User;
 
     if (data === null) {

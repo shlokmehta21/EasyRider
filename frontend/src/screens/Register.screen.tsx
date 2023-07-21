@@ -19,6 +19,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import axios from "axios";
 import { CreateUserResponse } from "../types/CreateUserResponse";
 import { useMutation, useQueryClient } from "react-query";
+import AxiosInstance from "../Utils/AxiosConfig";
 
 const ValidationSchema = Yup.object().shape({
   FirstName: Yup.string().required("First Name is Required"),
@@ -39,7 +40,7 @@ const ValidationSchema = Yup.object().shape({
     [Yup.ref("Password")],
     "Passwords must match"
   ),
-  CollegeName: Yup.string().required("College Name is Required"),
+  DomainName: Yup.string().required("Domain Name is Required"),
   StartDate: Yup.string().required("Start Date is Required"),
   EndDate: Yup.string().required("End Date is Required"),
   StudentID: Yup.string().required("Student ID is Required"),
@@ -55,15 +56,9 @@ const Register: React.FC<LoginProps> = ({ navigation }) => {
 
   async function createUser(userObject: CreateUserResponse) {
     try {
-      const { data } = await axios.post<CreateUserResponse>(
-        "http://localhost:4000/register",
-        userObject,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-        }
+      const { data } = await AxiosInstance.post<CreateUserResponse>(
+        "/register",
+        userObject
       );
       return data;
     } catch (error) {
@@ -115,7 +110,7 @@ const Register: React.FC<LoginProps> = ({ navigation }) => {
             Phone: "",
             Password: "",
             ConfirmPassword: "",
-            CollegeName: "",
+            DomainName: "",
             StartDate: "",
             EndDate: "",
             StudentID: {} || null,
@@ -137,7 +132,7 @@ const Register: React.FC<LoginProps> = ({ navigation }) => {
               phoneNumber: values.Phone,
               domain: [
                 {
-                  name: values.CollegeName,
+                  name: values.DomainName,
                   domainID: "CC",
                   startDate: new Date(values.StartDate).getTime(),
                   endDate: new Date(values.EndDate).getTime(),
@@ -255,12 +250,12 @@ const Register: React.FC<LoginProps> = ({ navigation }) => {
                   <CustomInput
                     placeholder="University / College Name"
                     secureTextEntry={false}
-                    value={values.CollegeName}
-                    onTextChange={handleChange("CollegeName")}
+                    value={values.DomainName}
+                    onTextChange={handleChange("DomainName")}
                   />
 
-                  {touched.CollegeName && errors.CollegeName && (
-                    <Text style={styles.errorMsg}>{errors.CollegeName}</Text>
+                  {touched.DomainName && errors.DomainName && (
+                    <Text style={styles.errorMsg}>{errors.DomainName}</Text>
                   )}
 
                   <CustomDatePicker

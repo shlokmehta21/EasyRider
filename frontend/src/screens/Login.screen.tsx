@@ -17,6 +17,8 @@ import { useMutation, useQueryClient } from "react-query";
 import { UserContext } from "../context/UserContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import jwt_decode from "jwt-decode";
+import AxiosInstance from "../Utils/AxiosConfig";
+import { getSessionId } from "../Utils/Common";
 
 const ValidationSchema = Yup.object().shape({
   Email: Yup.string().email("Invalid email").required("Email is Required"),
@@ -61,8 +63,8 @@ const Login: React.FC<LoginProps> = ({ navigation }) => {
   };
 
   //TODO: getUserData() Function
-  const getUserData = async (id: string, sessionId: string) => {
-    console.log("userDATA", id, sessionId);
+  const getUserData = async (id: string) => {
+    console.log("userDATA", id);
 
     let data = JSON.stringify({
       id: id,
@@ -72,9 +74,8 @@ const Login: React.FC<LoginProps> = ({ navigation }) => {
     };
 
     try {
-      const { data } = await axios.post("http://localhost:4000/user", {
-        id: id,
-        withCredentials: true,
+      const { data } = await AxiosInstance.post("/user", {
+        id,
       });
 
       console.log("userDATA", data);
@@ -93,26 +94,17 @@ const Login: React.FC<LoginProps> = ({ navigation }) => {
 
   async function loginUser(userObject: LoginUserResponse) {
     try {
-      const { data, headers } = await axios.post<LoginUserResponse>(
-        "http://localhost:4000/login",
-        userObject,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-        }
+      const { data, headers } = await AxiosInstance.post<LoginUserResponse>(
+        "/login",
+        userObject
       );
-      console.log(headers.sessionid);
-
-      const decoded: any = jwt_decode(headers.sessionid);
-
-      console.log(decoded);
+      const sessionId = getSessionId(headers);
+      if (sessionId) {
+        const decoded: any = jwt_decode(sessionId);
+        getUserData(decoded.id);
+      }
 
       // setAppData(headers.sessionid);
-
-      //TODO: Call getUserData() from backend and set user state
-      getUserData(decoded.id, headers.sessionid);
 
       // // @ts-ignore
       // setUser(userObj);

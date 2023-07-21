@@ -30,33 +30,100 @@ class UserProfile implements IController {
     this.router.post(this.path.resetPassword as string, this.resetPassword);
     this.router.use(this.path.default as string, CheckUserAuthentication);
     this.router.post(this.path.default as string, this.getUserProfile);
+    this.router.post(
+      this.path.profilePicture as string,
+      this.getProfilePicture
+    );
   }
 
-  getUserProfile = async (req: Request, resp: Response): Promise<void> => {
+  getUserProfile = (req: Request, resp: Response): void => {
     const { id }: { id: string } = req.body as { id: string };
-
-    console.log(id);
-
     if (!id) {
       new ErrorController().handleError(
         { code: 400, message: "User ID is required" },
         req,
         resp
       );
+      return;
     }
 
-    const db = new UserDbModel();
-    const user = await db.findOneByParams({ id });
+    const db = new UserDbModel().getModel();
+    db.findOne(
+      { id },
+      {
+        id: 1,
+        firstName: 1,
+        lastName: 1,
+        domain: 1,
+        email: { $concat: [{ $substr: ["$email", 0, 3] }, "XXX", ".com"] },
+        profilePicture: 1,
+        dob: 1,
+        "license.number": {
+          $concat: [{ $substr: ["$license.number", 0, 3] }, "XXX"],
+        },
+        phoneNumber: {
+          $concat: [{ $substr: ["$phoneNumber", 0, 3] }, "-XXX-XXXXX"],
+        },
+      }
+    )
+      .then((user: User | null) => {
+        if (user) {
+          resp.status(200).json(user);
+        } else {
+          new ErrorController().handleError(
+            { code: 400, message: "User Not Found" },
+            req,
+            resp
+          );
+        }
+      })
+      .catch((err: Error) => {
+        console.log(err);
+        new ErrorController().handleError(
+          { code: 500, message: "Internal Server Error Occurred" },
+          req,
+          resp
+        );
+      });
+  };
 
-    if (user) {
-      resp.status(200).json(user);
-    } else {
+  getProfilePicture = (req: Request, resp: Response): void => {
+    const { id }: { id: string } = req.body as { id: string };
+    if (!id) {
       new ErrorController().handleError(
-        { code: 400, message: "User Not Found" },
+        { code: 400, message: "User ID is required" },
         req,
         resp
       );
+      return;
     }
+
+    const db = new UserDbModel().getModel();
+    db.findOne(
+      { id },
+      {
+        id: 1,
+        profilePicture: 1,
+      }
+    )
+      .then((user: User | null) => {
+        if (user) {
+          resp.status(200).json({ profilePicture: user.profilePicture });
+        } else {
+          new ErrorController().handleError(
+            { code: 400, message: "User Not Found" },
+            req,
+            resp
+          );
+        }
+      })
+      .catch((err: Error) => {
+        new ErrorController().handleError(
+          { code: 500, message: "Internal Server Error Occurred" },
+          req,
+          resp
+        );
+      });
   };
 
   resetPassword = async (req: Request, resp: Response): Promise<void> => {

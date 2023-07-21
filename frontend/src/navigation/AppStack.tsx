@@ -1,17 +1,18 @@
-import React from "react";
+import React, { FC, memo } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { getFocusedRouteNameFromRoute } from "@react-navigation/native";
 import Home from "../screens/Home.screen";
-import { Foundation, Ionicons } from "@expo/vector-icons";
 import Account from "../screens/Account.screen";
 import Header from "../components/common/Header";
+import { Foundation, Ionicons } from "@expo/vector-icons";
 import { Platform } from "react-native";
 import Settings from "../screens/Settings.screen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
+// Define Home Stack Navigator
 const HomeStack = () => {
   return (
     <Stack.Navigator>
@@ -35,6 +36,7 @@ const HomeStack = () => {
   );
 };
 
+// Define Settings Stack Navigator
 const SettingStack = () => {
   return (
     <Stack.Navigator>
@@ -54,7 +56,13 @@ const SettingStack = () => {
   );
 };
 
-const AppStack = () => {
+// Define App Tab Navigator
+const AppStack: FC = memo(() => {
+  const getTabBarVisibility = (route: any) => {
+    const routeName = getFocusedRouteNameFromRoute(route) ?? "Feed";
+    return routeName === "GameDetails" ? "none" : "flex";
+  };
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -63,7 +71,7 @@ const AppStack = () => {
         tabBarStyle: { backgroundColor: "black" },
         tabBarInactiveTintColor: "grey",
         tabBarActiveTintColor: "black",
-        tabBarHideOnKeyboard: Platform.OS == "ios" ? false : true,
+        tabBarHideOnKeyboard: Platform.OS === "ios" ? false : true,
       }}
     >
       <Tab.Screen
@@ -95,17 +103,6 @@ const AppStack = () => {
       />
     </Tab.Navigator>
   );
-};
-
-const getTabBarVisibility = (route: any) => {
-  // console.log(route);
-  const routeName = getFocusedRouteNameFromRoute(route) ?? "Feed";
-  // console.log(routeName);
-
-  if (routeName == "GameDetails") {
-    return "none";
-  }
-  return "flex";
-};
+});
 
 export default AppStack;

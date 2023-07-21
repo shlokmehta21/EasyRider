@@ -8,7 +8,7 @@ import ErrorController from "./Error";
 import bcrypt from "bcrypt";
 import UserDbModel from "../schemas/User";
 import { validDateChecker } from "../utils/date";
-import { readFileSync } from "fs";
+import { readFile } from "fs/promises";
 import path from "path";
 
 class RegisterController implements IController {
@@ -28,159 +28,131 @@ class RegisterController implements IController {
     const user: User = req.body;
     const error: { [key: string]: string } = {};
 
-    const buffer = readFileSync(
-      path.join(__dirname, "../asset/img/bottle.png")
-    );
-    user.domain[0].images = [buffer, buffer];
+    // Read image files asynchronously
+    const imagesBuffer = await Promise.all([
+      readFile(path.join(__dirname, "../asset/img/bottle.png")),
+      readFile(path.join(__dirname, "../asset/img/bottle.png")),
+    ]);
+
+    // Assign image buffers to user domain
+    user.domain[0].images = imagesBuffer;
 
     // firstName validation
-    if (!user.firstName || !user.firstName.trim()) {
+    const { firstName } = user;
+    if (!firstName || !firstName.trim()) {
       error.firstName = "First Name is required";
+    } else if (
+      firstName.length <= 2 ||
+      !regex.ALPHANUMERIC_WITH_STARTING_WITH_LETTER.test(firstName)
+    ) {
+      error.firstName = "Invalid First Name";
     } else {
-      user.firstName = user.firstName.trim();
-      if (user.firstName.length <= 2) {
-        error.firstName = "First Name must contain 3 chars";
-      } else if (
-        !regex.ALPHANUMERIC_WITH_STARTING_WITH_LETTER.test(user.firstName)
-      ) {
-        error.firstName = "First Name must start with a letter.";
-      }
+      user.firstName = firstName.trim();
     }
-    // lastName validation
-    if (!user.lastName || !user.lastName.trim()) {
-      error.lastName = "Last Name is required";
-    } else {
-      user.lastName = user.lastName.trim();
 
-      if (user.lastName.length <= 2) {
-        error.lastName = "Last Name must contain 3 chars";
-      } else if (
-        !regex.ALPHANUMERIC_WITH_STARTING_WITH_LETTER.test(user.lastName)
-      ) {
-        error.lastName = "Last Name must start with a letter";
-      }
+    // lastName validation
+    const { lastName } = user;
+    if (!lastName || !lastName.trim()) {
+      error.lastName = "Last Name is required";
+    } else if (
+      lastName.length <= 2 ||
+      !regex.ALPHANUMERIC_WITH_STARTING_WITH_LETTER.test(lastName)
+    ) {
+      error.lastName = "Invalid Last Name";
+    } else {
+      user.lastName = lastName.trim();
     }
 
     // Email validation
-    if (!user.email || !user.email.trim()) {
+    const { email } = user;
+    if (!email || !email.trim()) {
       error.email = "Email ID is required";
+    } else if (!regex.EMAIL.test(email)) {
+      error.email = "Invalid Email ID";
     } else {
-      user.email = user.email.trim();
-      if (!regex.EMAIL.test(user.email)) {
-        error.email = "Invalid Email ID";
-      }
+      user.email = email.trim();
     }
 
     // dob validation
-    if (!user.dob) {
-      error.dob = "Date of Birth is required";
-    } else if (!validDateChecker(user.dob)) {
-      error.dob = "Date of Birth is Invalid";
+    if (!user.dob || !validDateChecker(user.dob)) {
+      error.dob = "Invalid Date of Birth";
     }
 
     // password validation
-    if (!user.password || !user.password.trim()) {
+    const { password, confirmPassword } = user;
+    if (!password || !password.trim()) {
       error.password = "Password is required";
+    } else if (password.length < 6 || !regex.PASSWORD.test(password)) {
+      error.password = "Invalid Password";
+    } else if (password !== confirmPassword) {
+      error.confirmPassword = "Password must match";
     } else {
-      user.password = user.password.trim();
-      if (user.password.length < 6) {
-        error.password = "Password must be at least 6 characters long";
-      } else if (!/[a-z]/.test(user.password)) {
-        error.password = "Password must contain at least one lowercase letter";
-      } else if (!/[A-Z]/.test(user.password)) {
-        error.password = "Password must contain at least one uppercase letter";
-      } else if (!/\d/.test(user.password)) {
-        error.password = "Password must contain at least one number";
-      } else if (!/[@$!%*?&]/.test(user.password)) {
-        error.password =
-          "Password must contain at least one special character (@, $, !, %, *, ?, &)";
-      } else if (!regex.PASSWORD.test(user.password)) {
-        error.password = "Password must meet all the requirements";
-      } else {
-        if (user.password !== user.confirmPassword) {
-          error.confirmPassword = "Password must match";
-        } else {
-          // Hash the password
-          const hashedPassword = await bcrypt.hash(user.password, 10);
-          // Update the user object with the hashed password
-          user.password = hashedPassword;
-        }
-      }
+      // Hash the password
+      const hashedPassword = await bcrypt.hash(password, 10);
+      user.password = hashedPassword;
     }
 
     // license validation
-    if (user.license && Object.keys(user.license).length > 0) {
-      if (!user.license.number) {
+    const { license } = user;
+    if (license && Object.keys(license).length > 0) {
+      if (!license.number) {
         error.licenseNo = "License is required";
       }
-      if (
-        !user.license.images ||
-        (user.license.images && user.license.images.length < 1)
-      ) {
+      if (!license.images || license.images.length < 1) {
         error.licenseImage = "License Image is required";
       }
     }
 
     // domain validation
-    if (!user.domain || user.domain.length < 1) {
+    const { domain } = user;
+    if (!domain || domain.length < 1) {
       error.domain = "Organisation/Institution name is required";
     } else {
-      const domainDetails = user.domain[0];
-      if (!domainDetails) {
-        error.domain = "Domain Details is required";
+      const domainDetails = domain[0];
+      if (!domainDetails || !domainDetails.name || !domainDetails.name.trim()) {
+        error.domainName = "Name is required";
+      } else if (
+        domainDetails.name.length <= 2 ||
+        !regex.ALPHANUMERIC_WITH_STARTING_WITH_LETTER.test(domainDetails.name)
+      ) {
+        error.domainName = "Invalid Domain Name";
       } else {
-        // domain name validation
-        if (!domainDetails.name || !domainDetails.name.trim()) {
-          error.domainName = "Name is required";
-        } else {
-          domainDetails.name = domainDetails.name.trim();
-          if (domainDetails.name.length <= 2) {
-            error.domainName = "Name must contain 3 chars";
-          } else if (
-            !regex.ALPHANUMERIC_WITH_STARTING_WITH_LETTER.test(
-              domainDetails.name
-            )
-          ) {
-            error.domainName = "Name must be Alphanumeric";
-          }
-        }
+        domainDetails.name = domainDetails.name.trim();
+      }
 
-        // domain ID validation
-        if (!domainDetails.domainID) {
-          error.domainID = "Organisation/Institution ID is required";
-        }
+      if (!domainDetails.domainID) {
+        error.domainID = "Organisation/Institution ID is required";
+      }
 
-        // domain start date validation
-        if (!domainDetails.startDate) {
-          error.domainStartDate = "Start Date is required";
-        } else if (!validDateChecker(domainDetails.startDate)) {
-          error.domainStartDate = "Start Date is Invalid";
-        }
+      if (
+        !domainDetails.startDate ||
+        !validDateChecker(domainDetails.startDate)
+      ) {
+        error.domainStartDate = "Invalid Start Date";
+      }
 
-        // domain end date validation
-        if (domainDetails.endDate && !validDateChecker(domainDetails.endDate)) {
-          error.domainEndDate = "End Date is Invalid";
-        }
+      if (domainDetails.endDate && !validDateChecker(domainDetails.endDate)) {
+        error.domainEndDate = "Invalid End Date";
+      }
 
-        // domain images validation
-        if (!domainDetails.images || domainDetails.images.length < 2) {
-          error.domainIDImages = "Front and Back side images are required";
-        }
+      if (!domainDetails.images || domainDetails.images.length < 2) {
+        error.domainIDImages = "Front and Back side images are required";
       }
     }
 
+    if (Object.keys(error).length > 0) {
+      new ErrorController().handleError(
+        {
+          code: 400,
+          customMessage: error,
+        },
+        req,
+        resp
+      );
+      return;
+    }
+
     try {
-      if (Object.keys(error).length > 0) {
-        new ErrorController().handleError(
-          {
-            code: 400,
-            customMessage: error,
-          },
-          req,
-          resp
-        );
-        return;
-      }
       const db = new UserDbModel();
       const isUserExists: boolean = await db.findIfExists({
         email: user.email,
@@ -196,6 +168,8 @@ class RegisterController implements IController {
         );
         return;
       }
+
+      // Create the user in the database
       const result = await db.getModel().create(user);
 
       if (result instanceof Error) {
@@ -212,7 +186,7 @@ class RegisterController implements IController {
 
       resp.status(200).json(true);
     } catch (err) {
-      console.log(err);
+      console.error("An error occurred while registering the user:", err);
       new ErrorController().handleError(
         {
           code: 500,

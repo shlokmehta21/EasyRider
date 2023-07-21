@@ -18,6 +18,10 @@ class ErrorController {
     res.status(400).json({ error: "Invalid Request" });
   }
 
+  handleNotFoundError(res: Response, error: string) {
+    res.status(400).json({ error });
+  }
+
   handleInternalServer(res: Response) {
     res.status(500).json({ error: "Internal Server Occurred" });
   }

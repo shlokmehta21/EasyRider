@@ -1,6 +1,7 @@
 import express, { Application, Router } from "express";
 import * as bodyParser from "body-parser";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import IController from "./models/interfaces/IController";
 import path from "path";
 import SanitizeInput from "./middlewares/sanitizeInput";
@@ -19,7 +20,14 @@ class App {
   }
 
   private initializeMiddlewares() {
-    this.app.use(cors({ origin: true, credentials: true }));
+    this.app.use(
+      cors({
+        origin: process.env.CLIENT_URL,
+        credentials: true,
+        allowedHeaders: ["Content-Type", "Authorization"],
+      })
+    );
+    this.app.use(cookieParser());
 
     this.app.use(express.static(path.join(__dirname, "../public")));
     this.app.use(

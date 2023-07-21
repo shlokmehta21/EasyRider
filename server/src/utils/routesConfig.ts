@@ -26,6 +26,7 @@ const routes: RouteConfig = {
   },
   USER_PROFILE: {
     default: "/user",
+    profilePicture: "/user/profile-picture",
     forgotPassword: "/forgot-password",
     resetPassword: "/reset-password/:token",
   },

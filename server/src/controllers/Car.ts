@@ -26,9 +26,41 @@ class Car implements IController {
 
   initializeRoutes(): void {
     this.router.use(this.path.default as string, CheckUserAuthentication);
+    this.router.post(this.path.default as string, this.getCarDetails);
     this.router.post(this.path.register as string, this.register);
     this.router.delete(this.path.delete as string, this.delete);
   }
+  getCarDetails = async (req: Request, resp: Response): Promise<void> => {
+    const sessionId = req.cookies.sessionid as string;
+    const { id: userId }: SessionData = new UserSession().getSessionData(
+      sessionId
+    );
+    const { id }: { id: string } = req.body as { id: string };
+    if (!id) {
+      new ErrorController().handleError(
+        { code: 400, message: "Car ID is required" },
+        req,
+        resp
+      );
+    }
+    const db = new UserDbModel();
+    const car = await db.getModel().findOne(
+      { id: userId, "car.id": id },
+      {
+        id: 1,
+        car: 1,
+      }
+    );
+    if (car) {
+      resp.status(200).json(car);
+    } else {
+      new ErrorController().handleError(
+        { code: 400, message: "User Not Found" },
+        req,
+        resp
+      );
+    }
+  };
 
   async delete(req: Request, resp: Response): Promise<void> {
     try {
@@ -103,7 +135,7 @@ class Car implements IController {
       );
     } else {
       const db = new UserDbModel();
-      const sessionId: string = req.headers.sessionid as string;
+      const sessionId: string = req.cookies.sessionid as string;
       const { id }: SessionData = new UserSession().getSessionData(sessionId);
       if (!id) {
         new ErrorController().handleError(

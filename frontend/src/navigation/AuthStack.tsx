@@ -1,4 +1,4 @@
-import React from "react";
+import React, { FC, memo } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Welcome } from "../screens/Welcome.screen";
 import Login from "../screens/Login.screen";
@@ -9,7 +9,7 @@ import ResetPassword from "../screens/ResetPassword.screen";
 
 const Stack = createNativeStackNavigator();
 
-const AuthStack: React.FC = () => {
+const AuthStack: FC = memo(() => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Onboarding" component={Welcome} />
@@ -19,6 +19,6 @@ const AuthStack: React.FC = () => {
       <Stack.Screen name="ResetPassword" component={ResetPassword} />
     </Stack.Navigator>
   );
-};
+});
 
 export default AuthStack;

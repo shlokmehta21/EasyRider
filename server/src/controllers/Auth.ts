@@ -24,7 +24,7 @@ class AuthController implements IController {
 
   logout(req: Request, resp: Response): void {
     try {
-      const sessionid: string = req.headers.sessionid as string;
+      const sessionid: string = req.cookies.sessionid as string;
       if (sessionid) {
         if (!new UserSession().validateSession(sessionid)) {
           new ErrorController().handleError(
@@ -34,7 +34,12 @@ class AuthController implements IController {
           );
           return;
         }
-        delete req.headers.sessionid;
+        resp.cookie("sessionid", "", {
+          httpOnly: true,
+          // secure: true,
+          maxAge: 0,
+          sameSite: "strict",
+        });
         resp.status(200).json(true);
       } else {
         new ErrorController().handleError(
@@ -54,8 +59,17 @@ class AuthController implements IController {
   }
 
   async login(req: Request, resp: Response): Promise<void> {
-    const sessionid = req.headers.sessionid as string;
-    if (sessionid && new UserSession().validateSessionAndUpdate(sessionid)) {
+    const sessionid = req.cookies.sessionid as string;
+    if (sessionid) {
+      // Set the session ID as a cookie in the response
+      const updateSeesionId = new UserSession().validateSessionAndUpdate(
+        sessionid
+      );
+      resp.cookie("sessionid", updateSeesionId, {
+        httpOnly: true,
+        // secure: true,
+        sameSite: "strict",
+      });
       resp.status(202).json(true);
       return;
     }
@@ -103,8 +117,21 @@ class AuthController implements IController {
           id: user.id,
           email: user.email,
         });
+        // remove password from user object
+        const userObj = {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+        };
+        // Set the session ID as a cookie in the response
+        resp.cookie("sessionid", sessionId, {
+          httpOnly: true,
+          // secure: true,
+          sameSite: "strict",
+        });
 
-        resp.status(200).setHeader("sessionId", sessionId).json(true);
+        resp.status(200).json(userObj);
       }
     } catch (err) {
       console.error(err);
