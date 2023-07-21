@@ -1,5 +1,6 @@
 import express, { Application, Router } from "express";
 import * as bodyParser from "body-parser";
+import cors from "cors";
 import IController from "./models/interfaces/IController";
 import path from "path";
 import SanitizeInput from "./middlewares/sanitizeInput";
@@ -18,6 +19,8 @@ class App {
   }
 
   private initializeMiddlewares() {
+    this.app.use(cors({ origin: true, credentials: true }));
+
     this.app.use(express.static(path.join(__dirname, "../public")));
     this.app.use(
       bodyParser.json({

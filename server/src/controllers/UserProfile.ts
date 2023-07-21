@@ -29,11 +29,14 @@ class UserProfile implements IController {
     this.router.post(this.path.forgotPassword as string, this.forgotPassword);
     this.router.post(this.path.resetPassword as string, this.resetPassword);
     this.router.use(this.path.default as string, CheckUserAuthentication);
-    this.router.get(this.path.default as string, this.getUserProfile);
+    this.router.post(this.path.default as string, this.getUserProfile);
   }
 
   getUserProfile = async (req: Request, resp: Response): Promise<void> => {
     const { id }: { id: string } = req.body as { id: string };
+
+    console.log(id);
+
     if (!id) {
       new ErrorController().handleError(
         { code: 400, message: "User ID is required" },
@@ -41,6 +44,7 @@ class UserProfile implements IController {
         resp
       );
     }
+
     const db = new UserDbModel();
     const user = await db.findOneByParams({ id });
 

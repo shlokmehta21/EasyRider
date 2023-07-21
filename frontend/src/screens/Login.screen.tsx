@@ -12,7 +12,7 @@ import { CustomButton } from "../components/common/CustomButton";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import axios from "axios";
+import axios, { AxiosProxyConfig } from "axios";
 import { useMutation, useQueryClient } from "react-query";
 import { UserContext } from "../context/UserContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -48,7 +48,7 @@ const Login: React.FC<LoginProps> = ({ navigation }) => {
   const queryClient = useQueryClient();
   const { setUser, setIsLogged, user } = useContext(UserContext);
 
-  const setAppData = async (userSession: string): Promise<void> => {
+  const setUserData = async (userSession: string): Promise<void> => {
     try {
       const result = await AsyncStorage.setItem(
         "userSession",
@@ -57,6 +57,37 @@ const Login: React.FC<LoginProps> = ({ navigation }) => {
       console.log(result);
     } catch (error) {
       console.log(error);
+    }
+  };
+
+  //TODO: getUserData() Function
+  const getUserData = async (id: string, sessionId: string) => {
+    console.log("userDATA", id, sessionId);
+
+    let data = JSON.stringify({
+      id: id,
+    });
+    let config = {
+      data: data,
+    };
+
+    try {
+      const { data } = await axios.post("http://localhost:4000/user", {
+        id: id,
+        withCredentials: true,
+      });
+
+      console.log("userDATA", data);
+
+      return data;
+    } catch (error) {
+      console.log("GetUser error");
+      console.log(error);
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          console.log(error.response);
+        }
+      }
     }
   };
 
@@ -80,6 +111,9 @@ const Login: React.FC<LoginProps> = ({ navigation }) => {
 
       // setAppData(headers.sessionid);
 
+      //TODO: Call getUserData() from backend and set user state
+      getUserData(decoded.id, headers.sessionid);
+
       // // @ts-ignore
       // setUser(userObj);
       // // @ts-ignore
@@ -88,13 +122,10 @@ const Login: React.FC<LoginProps> = ({ navigation }) => {
       return data;
     } catch (error) {
       console.log(error);
-
       if (axios.isAxiosError(error)) {
-        console.log("error message: ", error.message);
-        return error.message;
-      } else {
-        console.log("unexpected error: ", error);
-        return "An unexpected error occurred";
+        if (error.response) {
+          console.log(error.response);
+        }
       }
     }
   }
@@ -126,7 +157,7 @@ const Login: React.FC<LoginProps> = ({ navigation }) => {
             password: values.Password,
           };
           mutate(userObject);
-          resetForm();
+          // resetForm();
         }}
       >
         {({ values, errors, touched, handleChange, handleSubmit }) => (
