@@ -28,10 +28,44 @@ class UserProfile implements IController {
     });
     this.router.post(this.path.forgotPassword as string, this.forgotPassword);
     this.router.post(this.path.resetPassword as string, this.resetPassword);
+    this.router.use(this.path.default as string, CheckUserAuthentication);
+    this.router.get(this.path.default as string, this.getUserProfile);
   }
 
+  getUserProfile = async (req: Request, resp: Response): Promise<void> => {
+    const { id }: { id: string } = req.body as { id: string };
+    if (!id) {
+      new ErrorController().handleError(
+        { code: 400, message: "User ID is required" },
+        req,
+        resp
+      );
+    }
+    const db = new UserDbModel();
+    const user = await db.findOneByParams({ id });
+
+    if (user) {
+      resp.status(200).json(user);
+    } else {
+      new ErrorController().handleError(
+        { code: 400, message: "User Not Found" },
+        req,
+        resp
+      );
+    }
+  };
+
   resetPassword = async (req: Request, resp: Response): Promise<void> => {
-    const { token } = req.params;
+    const { token }: { token: string } = req.params as { token: string };
+    if (!token) {
+      new ErrorController().handleError(
+        { code: 400, message: "Token is required" },
+        req,
+        resp
+      );
+      return;
+    }
+
     let {
       password,
       confirmPassword,
@@ -43,6 +77,7 @@ class UserProfile implements IController {
         req,
         resp
       );
+      return;
     }
 
     let db: ResetDBModel | UserDbModel = new ResetDBModel();

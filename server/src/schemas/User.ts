@@ -83,6 +83,7 @@ const userSchema = new mongoose.Schema({
     },
   ],
   car: {
+    type: mongoose.Schema.Types.Mixed,
     id: {
       type: String,
       default: uuidv4(),
@@ -103,7 +104,7 @@ const userSchema = new mongoose.Schema({
       type: [Buffer],
       required: true,
     },
-    type: {
+    carType: {
       type: String,
       required: true,
     },
