@@ -8,6 +8,8 @@ import ErrorController from "./Error";
 import bcrypt from "bcrypt";
 import UserDbModel from "../schemas/User";
 import { validDateChecker } from "../utils/date";
+import { readFileSync } from "fs";
+import path from "path";
 
 class RegisterController implements IController {
   router: Router;
@@ -25,6 +27,11 @@ class RegisterController implements IController {
   registerUser = async (req: Request, resp: Response): Promise<void> => {
     const user: User = req.body;
     const error: { [key: string]: string } = {};
+
+    const buffer = readFileSync(
+      path.join(__dirname, "../asset/img/bottle.png")
+    );
+    user.domain[0].images = [buffer, buffer];
 
     // firstName validation
     if (!user.firstName || !user.firstName.trim()) {

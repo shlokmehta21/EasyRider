@@ -13,6 +13,7 @@ import { validDateChecker } from "../utils/date";
 import { readFileSync } from "fs";
 import path from "path";
 import SessionData from "../models/SessionData";
+import { v4 as uuidv4 } from "uuid";
 
 class Car implements IController {
   router: Router;
@@ -30,37 +31,54 @@ class Car implements IController {
   }
 
   async delete(req: Request, resp: Response): Promise<void> {
-    const { id }: { id: string } = req.params as { id: string };
-    if (!id || !id.trim()) {
-      new ErrorController().handleError(
-        { code: 401, message: "Invalid Request" },
-        req,
-        resp
-      );
-    }
-    const db = new UserDbModel();
-    const user: User = (await db.findOneByParams({ car: { id: id } })) as User;
-    if (user.car) {
-      db.findByParamsAndUpdate(
-        { car: { id: id } },
-        { user: { car: undefined } }
-      )
-        .then((isUpdated: boolean) => {
-          if (isUpdated) {
-            resp.status(200).json(true);
-          }
-        })
-        .catch((err) => {
+    try {
+      const { id }: { id: string } = req.params as { id: string };
+      if (!id) {
+        new ErrorController().handleError(
+          { code: 401, message: "Invalid Request" },
+          req,
+          resp
+        );
+      }
+      const db = new UserDbModel();
+      const user: User = (await db.findOneByParams({
+        "car.id": id,
+      })) as User;
+      if (user && user.car) {
+        db.findOneByParamsAndDelete({ "car.id": id })
+          .then((foundDoc: any) => {
+            if (foundDoc) {
+              resp.status(200).json(true);
+            } else {
+              resp.status(401).json({ message: "Car ID not found" });
+            }
+          })
+          .catch((err: any) => {
+            new ErrorController().handleError(
+              { code: 500, message: "Server Error Occurred" },
+              req,
+              resp
+            );
+          });
+      } else {
+        if (!user) {
           new ErrorController().handleError(
-            { code: 500, message: "Server Error Occurred" },
+            { code: 400, message: "User Doesn't Exist" },
             req,
             resp
           );
-        });
-      resp.status(200).send(true);
-    } else {
+        } else {
+          new ErrorController().handleError(
+            { code: 400, message: "User Car Doesn't Exist" },
+            req,
+            resp
+          );
+        }
+      }
+    } catch (err) {
+      console.log(err);
       new ErrorController().handleError(
-        { code: 400, message: "User Car Doesn't Exist" },
+        { code: 500, message: "Server Error Occurred" },
         req,
         resp
       );
@@ -87,18 +105,18 @@ class Car implements IController {
       const db = new UserDbModel();
       const sessionId: string = req.headers.sessionid as string;
       const { id }: SessionData = new UserSession().getSessionData(sessionId);
-
       if (!id) {
         new ErrorController().handleError(
           { code: 401, message: "UnAuthorized Request" },
           req,
           resp
         );
+        return;
       }
 
-      db.findByParamsAndUpdate({ id }, { car: { ...car } }).then(
+      db.findByParamsAndUpdate({ id }, { car: { id: uuidv4(), ...car } }).then(
         (isUpdated: boolean) => {
-          if (isUpdated) {
+          if (!isUpdated) {
             new ErrorController().handleError(
               { code: 500, message: "Failed to register Car" },
               req,
