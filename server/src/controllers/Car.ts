@@ -45,7 +45,7 @@ class Car implements IController {
         "car.id": id,
       })) as User;
       if (user && user.car) {
-        db.findOneByParamsAndDelete({ "car.id": id })
+        db.findOneByParamsAndUnsetObject({ "car.id": id })
           .then((foundDoc: any) => {
             if (foundDoc) {
               resp.status(200).json(true);
@@ -61,7 +61,7 @@ class Car implements IController {
             );
           });
       } else {
-        if (!user) {
+        if (!user && !id) {
           new ErrorController().handleError(
             { code: 400, message: "User Doesn't Exist" },
             req,
@@ -181,7 +181,7 @@ class Car implements IController {
     }
 
     // Type validation
-    if (!regex.CONTAINS_ALPHANUMERIC.test(car.type)) {
+    if (!regex.CONTAINS_ALPHANUMERIC.test(car.carType)) {
       error.type = "Type must be alphanumeric";
     }
     return error;
