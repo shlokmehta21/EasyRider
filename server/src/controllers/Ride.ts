@@ -8,6 +8,8 @@ import ErrorController from "./Error";
 import CheckUserAuthentication from "../middlewares/Auth";
 import UserDbModel from "../schemas/User";
 import User from "../models/User";
+import SessionData from "../models/SessionData";
+import UserSession from "../utils/session";
 
 class Ride implements IController {
   router: Router;
@@ -239,7 +241,13 @@ class Ride implements IController {
   }
 
   async book(req: Request, resp: Response): Promise<void> {
-    const rideData: RideModel = req.body;
+    const sessionid: string = req.cookies.sessionid as string;
+    const { id, email }: SessionData = new UserSession().getSessionData(
+      sessionid
+    );
+
+    const rideData: RideRequest = req.body;
+
     // TODO: Implement booking logic
   }
 
@@ -334,6 +342,18 @@ class Ride implements IController {
 
     return error;
   }
+}
+
+interface RideRequest {
+  id: string;
+  carId: string;
+  noOfSeats: number;
+  pickUp: {
+    location: ILocation;
+  };
+  dropOff: {
+    location: ILocation;
+  };
 }
 
 export default Ride;

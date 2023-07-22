@@ -29,6 +29,7 @@ const routes: RouteConfig = {
     profilePicture: "/user/profile-picture",
     forgotPassword: "/forgot-password",
     resetPassword: "/reset-password/:token",
+    update: "/user/update-profile",
   },
 };
 
