@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -96,10 +97,11 @@ const Register: React.FC<LoginProps> = ({ navigation }) => {
   );
 
   return (
-    <KeyboardAvoidingView>
-      <ScrollView
-        showsHorizontalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
+    <ScrollView contentContainerStyle={{ flex: 1 }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={250}
+        style={{ flex: 1 }}
       >
         <Formik
           initialValues={{
@@ -319,8 +321,8 @@ const Register: React.FC<LoginProps> = ({ navigation }) => {
             </View>
           )}
         </Formik>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </ScrollView>
   );
 };
 

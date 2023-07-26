@@ -1,10 +1,13 @@
-import { FC } from "react";
+import { FC, useContext, useEffect } from "react";
 import { View, Text, TouchableOpacity, ImageBackground } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { UserContext } from "../../context/UserContext";
 
 interface HeaderProps {}
 
 const Header: FC<HeaderProps> = ({}) => {
+  const { userStorage } = useContext(UserContext);
+
   const image = {
     uri: "https://lh3.googleusercontent.com/ogw/AGvuzYaDDOysmiNBPMt5W3bVUnWmVaO-EYf9bZFuEMR-Qg=s32-c-mo",
   };
@@ -24,7 +27,7 @@ const Header: FC<HeaderProps> = ({}) => {
         }}
       >
         <Text style={{ fontSize: 18, fontWeight: "600" }}>
-          Hello, John William
+          Hello, {userStorage?.user.firstName} {userStorage?.user.lastName}
         </Text>
         <TouchableOpacity
           style={{

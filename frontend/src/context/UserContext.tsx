@@ -1,6 +1,7 @@
 import { createContext, useEffect, useState } from "react";
 import { CurrentUserContextType } from "../types/CurrentUserContextType";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { userStorage } from "../types/UserStorage";
 
 interface UserProviderProps {
   children?: React.ReactNode;
@@ -8,42 +9,37 @@ interface UserProviderProps {
   user?: CurrentUserContextType | null;
   setUser?: React.Dispatch<React.SetStateAction<CurrentUserContextType>>;
   setIsLogged?: React.Dispatch<React.SetStateAction<boolean>>;
-  userSessionID?: string | null;
-  setUserSessionID?: React.Dispatch<React.SetStateAction<string | null>>;
+  userStorage?: userStorage | null;
+  setUserStorage?: React.Dispatch<React.SetStateAction<userStorage | null>>;
+  getUserStorageData?: () => Promise<userStorage | null>;
 }
 
 const initialValues: CurrentUserContextType = {
-  id: "",
-  email: "",
   firstName: "",
   lastName: "",
-  license: {
-    images: [],
-    number: "",
-  },
-  phoneNumber: "",
   sessionId: "",
 };
 
 export const UserContext = createContext<UserProviderProps>({
   user: initialValues,
-  userSessionID: "",
+  userStorage: null,
   isLogged: false,
   setUser: () => {},
   setIsLogged: () => {},
-  setUserSessionID: () => {},
+  setUserStorage: () => {},
+  getUserStorageData: () => Promise.resolve(null),
 });
 
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const [user, setUser] = useState<CurrentUserContextType>(initialValues);
+  const [userStorage, setUserStorage] = useState<userStorage | null>(null);
   const [isLogged, setIsLogged] = useState<boolean>(false);
-  const [userSessionID, setUserSessionID] = useState<string | null>(null);
 
-  const getSessionID = async (): Promise<string | null> => {
+  const getUserStorageData = async (): Promise<userStorage | null> => {
     try {
-      const result = await AsyncStorage.getItem("userSession");
+      const result = await AsyncStorage.getItem("user-storage");
       if (result) {
-        return result;
+        return JSON.parse(result);
       }
     } catch (error) {
       console.log(error);
@@ -53,9 +49,9 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   };
 
   useEffect(() => {
-    getSessionID().then((res) => {
+    getUserStorageData().then((res) => {
       if (res) {
-        setUserSessionID(res);
+        setUserStorage(res);
       }
     });
   }, [user]);
@@ -67,8 +63,9 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         setUser,
         isLogged,
         setIsLogged,
-        setUserSessionID,
-        userSessionID,
+        userStorage,
+        setUserStorage,
+        getUserStorageData,
       }}
     >
       {children}

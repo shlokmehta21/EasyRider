@@ -19,6 +19,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import jwt_decode from "jwt-decode";
 import AxiosInstance from "../Utils/AxiosConfig";
 import { getSessionId } from "../Utils/Common";
+import { userStorage } from "../types/UserStorage";
 
 const ValidationSchema = Yup.object().shape({
   Email: Yup.string().email("Invalid email").required("Email is Required"),
@@ -50,33 +51,36 @@ const Login: React.FC<LoginProps> = ({ navigation }) => {
   const queryClient = useQueryClient();
   const { setUser, setIsLogged, user } = useContext(UserContext);
 
-  const setUserData = async (userSession: string): Promise<void> => {
+  const setUserData = async (user: userStorage): Promise<void> => {
     try {
       const result = await AsyncStorage.setItem(
-        "userSession",
-        userSession as string
+        "user-storage",
+        JSON.stringify(user)
       );
-      console.log(result);
     } catch (error) {
       console.log(error);
     }
   };
 
-  //TODO: getUserData() Function
-  const getUserData = async (id: string) => {
-    console.log("userDATA", id);
-
-    let data = JSON.stringify({
-      id: id,
-    });
-    let config = {
-      data: data,
-    };
-
+  const getUserData = async (id: string, sessionId: string) => {
     try {
       const { data } = await AxiosInstance.post("/user", {
         id,
       });
+
+      const userObj = {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        sessionId: sessionId,
+        id: data.id,
+      };
+
+      setUserData({ user: userObj });
+
+      // @ts-ignore
+      setUser(userObj);
+      // @ts-ignore
+      setIsLogged(true);
 
       console.log("userDATA", data);
 
@@ -101,22 +105,15 @@ const Login: React.FC<LoginProps> = ({ navigation }) => {
       const sessionId = getSessionId(headers);
       if (sessionId) {
         const decoded: any = jwt_decode(sessionId);
-        getUserData(decoded.id);
+        getUserData(decoded.id, sessionId);
       }
-
-      // setAppData(headers.sessionid);
-
-      // // @ts-ignore
-      // setUser(userObj);
-      // // @ts-ignore
-      // setIsLogged(true);
 
       return data;
     } catch (error) {
       console.log(error);
       if (axios.isAxiosError(error)) {
         if (error.response) {
-          console.log(error.response);
+          console.log(error.response.data);
         }
       }
     }

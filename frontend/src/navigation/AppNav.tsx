@@ -7,22 +7,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface AppNavProps {}
 
-const getSessionID = async (): Promise<string | null> => {
-  try {
-    const result = await AsyncStorage.getItem("userSession");
-    if (result) {
-      return result;
-    }
-  } catch (error) {
-    console.log(error);
-  }
-
-  return null;
-};
-
 const AppNav: FC<AppNavProps> = ({}) => {
-  const { isLogged, user, userSessionID } = useContext(UserContext);
-  // const [sessionID, setSessionID] = React.useState<string | null>("");
+  const { user, userStorage } = useContext(UserContext);
+
   const AppTheme = {
     ...DefaultTheme,
     colors: {
@@ -31,21 +18,15 @@ const AppNav: FC<AppNavProps> = ({}) => {
     },
   };
 
-  // React.useEffect(() => {
-  //   getSessionID().then((res) => {
-  //     if (res) {
-  //       setSessionID(res);
-  //     }
-  //   });
-  // }, [user]);
-
-  console.log("CONETXT - User session empty", user?.sessionId === "");
-  console.log("CONETXT", isLogged);
-  console.log("STORAGE", userSessionID);
+  console.log(userStorage?.user?.sessionId);
 
   return (
     <NavigationContainer theme={AppTheme}>
-      {userSessionID === null ? <AuthStack /> : <AppStack />}
+      {userStorage?.user?.sessionId === undefined ? (
+        <AuthStack />
+      ) : (
+        <AppStack />
+      )}
     </NavigationContainer>
   );
 };

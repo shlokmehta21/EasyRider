@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import {
   ActivityIndicator,
   Image,
   KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -15,6 +16,12 @@ import { Formik } from "formik";
 import * as Yup from "yup";
 import CustomDatePicker from "../components/common/CustomDatePicker";
 import * as ImagePicker from "expo-image-picker";
+import AxiosInstance from "../Utils/AxiosConfig";
+import axios from "axios";
+import { UserContext } from "../context/UserContext";
+import { QueryClient, useMutation, useQuery } from "react-query";
+import { UserProfile } from "../types/UserProfile";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 const ValidationSchema = Yup.object().shape({
   DOB: Yup.date().required("Date of birth is Required"),
@@ -39,7 +46,15 @@ const ValidationSchema = Yup.object().shape({
   StudentID: Yup.string().required("Student ID is Required"),
 });
 
-const Account: React.FC = ({}) => {
+interface AccountProps {
+  navigation: NativeStackNavigationProp<any, any>;
+}
+
+const Account: React.FC<AccountProps> = ({ navigation }) => {
+  const { userStorage } = useContext(UserContext);
+
+  const userId = userStorage?.user.id;
+
   const [image, setImage] = useState({
     uri: "https://lh3.googleusercontent.com/ogw/AGvuzYaDDOysmiNBPMt5W3bVUnWmVaO-EYf9bZFuEMR-Qg=s32-c-mo",
   });
@@ -67,19 +82,79 @@ const Account: React.FC = ({}) => {
     }
   };
 
+  const getUserData = async () => {
+    try {
+      const { data } = await AxiosInstance.post("/user", {
+        id: userId,
+      });
+
+      return data;
+    } catch (error) {
+      console.log("GetUser error");
+      console.log(error);
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          console.log(error.response.data);
+        }
+      }
+    }
+  };
+
+  const updateUser = async (values: UserProfile) => {
+    try {
+      const { data } = await AxiosInstance.put("/user/profile", values);
+      return data;
+    } catch (error) {
+      console.log(error);
+
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          console.log(error.response.data);
+        }
+      }
+    }
+  };
+
+  const { data, error, isLoading } = useQuery("UserData", getUserData);
+
+  const {
+    mutate,
+    isLoading: isUpdating,
+    isSuccess,
+  } = useMutation(updateUser, {
+    onSuccess: (data) => {
+      navigation.navigate("Setting");
+      console.log(data);
+    },
+    onError: () => {},
+    onSettled: () => {},
+  });
+
+  if (isLoading)
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="black" />
+      </View>
+    );
+
   return (
-    <KeyboardAvoidingView>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={90}
+      style={{ flex: 1 }}
+    >
       <ScrollView
         showsHorizontalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
         <Formik
+          enableReinitialize={true}
           initialValues={{
-            FirstName: "",
-            LastName: "",
-            DOB: "",
-            Email: "",
-            Phone: "",
+            FirstName: isLoading ? "" : data?.firstName,
+            LastName: isLoading ? "" : data?.lastName,
+            DOB: isLoading ? "" : new Date(data?.dob).toDateString(),
+            Email: isLoading ? "" : data?.email,
+            Phone: isLoading ? "" : data?.phoneNumber,
             CollegeName: "",
             StartDate: "",
             EndDate: "",
@@ -87,9 +162,20 @@ const Account: React.FC = ({}) => {
             StudentID: {} || null,
             License: {},
           }}
-          validationSchema={ValidationSchema}
+          // validationSchema={ValidationSchema}
           onSubmit={(values, { resetForm }) => {
-            resetForm();
+            console.log(values);
+
+            const data = {
+              firstName: values.FirstName,
+              lastName: values.LastName,
+              email: values.Email,
+              dob: new Date(values.DOB).getTime(),
+              phoneNumber: String(values.Phone),
+            };
+            mutate(data);
+
+            if (isSuccess) resetForm();
           }}
         >
           {({
@@ -110,27 +196,28 @@ const Account: React.FC = ({}) => {
                 value={values.FirstName}
                 onTextChange={handleChange("FirstName")}
               />
-              {touched.FirstName && errors.FirstName && (
+              {/* {touched.FirstName && errors.FirstName && (
                 <Text style={styles.errorMsg}>{errors.FirstName}</Text>
-              )}
+              )} */}
               <CustomInput
                 placeholder="Last Name"
                 secureTextEntry={false}
                 value={values.LastName}
                 onTextChange={handleChange("LastName")}
               />
-              {touched.LastName && errors.LastName && (
+              {/* {touched.LastName && errors.LastName && (
                 <Text style={styles.errorMsg}>{errors.LastName}</Text>
-              )}
+              )} */}
               <CustomInput
                 placeholder="Email"
                 secureTextEntry={false}
+                autoCapitalizeEmail="none"
                 value={values.Email}
                 onTextChange={handleChange("Email")}
               />
-              {touched.Email && errors.Email && (
+              {/* {touched.Email && errors.Email && (
                 <Text style={styles.errorMsg}>{errors.Email}</Text>
-              )}
+              )} */}
               <CustomDatePicker
                 fieldName="DOB"
                 value={values.DOB}
@@ -149,17 +236,17 @@ const Account: React.FC = ({}) => {
                 maxLength={10}
                 onTextChange={handleChange("Phone")}
               />
-              {touched.Phone && errors.Phone && (
+              {/* {touched.Phone && errors.Phone && (
                 <Text style={styles.errorMsg}>{errors.Phone}</Text>
-              )}
+              )} */}
 
               <CustomButton
                 title="Update"
-                // children={isLoading ? <ActivityIndicator /> : null}
+                children={isUpdating ? <ActivityIndicator /> : null}
                 onPress={handleSubmit}
                 backGroundColor="black"
                 color="white"
-                // diabled={isLoading ? true : false}
+                diabled={isUpdating ? true : false}
               />
             </View>
           )}

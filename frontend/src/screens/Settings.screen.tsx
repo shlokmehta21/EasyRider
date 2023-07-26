@@ -12,24 +12,18 @@ import { CustomButton } from "../components/common/CustomButton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { UserContext } from "../context/UserContext";
 import axios from "axios";
+import AxiosInstance from "../Utils/AxiosConfig";
 
 interface Settings {
   navigation: NativeStackNavigationProp<any, any>;
 }
 
 const Settings: FC<Settings> = ({ navigation }) => {
-  const { setIsLogged, setUserSessionID, userSessionID } =
-    useContext(UserContext);
+  const { setIsLogged, userStorage, setUserStorage } = useContext(UserContext);
 
   async function logOutUser() {
     try {
-      const { data } = await axios.get("http://localhost:4000/logout", {
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          sessionid: userSessionID,
-        },
-      });
+      const { data } = await AxiosInstance.get("/logout");
       return data;
     } catch (error) {
       console.log(error);
@@ -44,15 +38,15 @@ const Settings: FC<Settings> = ({ navigation }) => {
   }
 
   const OnLogout = async () => {
-    if (userSessionID) {
+    if (userStorage?.user.sessionId) {
       try {
         logOutUser();
 
-        const result = await AsyncStorage.removeItem("userSession");
+        const result = await AsyncStorage.removeItem("user-storage");
         // @ts-ignore
         setIsLogged(false);
         // @ts-ignore
-        setUserSessionID(null);
+        setUserStorage(null);
         console.log(result);
       } catch (error) {
         console.log(error);
@@ -98,13 +92,17 @@ const Settings: FC<Settings> = ({ navigation }) => {
           <AntDesign name="right" size={20} color="black" />
         </View>
 
-        <View style={[styles.settingCard, styles.lastCard]}>
+        <Pressable
+          style={styles.settingCard}
+          onPress={() => navigation.navigate("Help")}
+        >
           <View style={styles.notification}>
             <Feather name="help-circle" size={24} color="black" />
             <Text style={styles.text}>Help</Text>
           </View>
           <AntDesign name="right" size={20} color="black" />
-        </View>
+        </Pressable>
+
         <CustomButton
           title="Logout"
           onPress={OnLogout}

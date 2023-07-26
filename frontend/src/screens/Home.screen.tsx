@@ -31,9 +31,9 @@ const Home: FC<HomeProps> = ({}) => {
           </View>
         </View>
 
-        {/* Search  */}
+        {/* Search */}
         <View style={styles.searchContainer}>
-          <TextInput placeholder="Search Location" style={styles.search} />
+          <TextInput placeholder="Where to?" style={styles.search} />
           <TouchableOpacity style={styles.searchBtn}>
             <FontAwesome name="search" size={20} color="white" />
           </TouchableOpacity>

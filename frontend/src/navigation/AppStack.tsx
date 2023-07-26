@@ -8,6 +8,8 @@ import Header from "../components/common/Header";
 import { Foundation, Ionicons } from "@expo/vector-icons";
 import { Platform } from "react-native";
 import Settings from "../screens/Settings.screen";
+import AddCar from "../screens/AddCar.screen";
+import Chat from "../screens/Chat.screen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -52,6 +54,24 @@ const SettingStack = () => {
         component={Account}
         options={{ title: "Update account" }}
       />
+      <Stack.Screen name="Help" component={Chat} options={{ title: "Help" }} />
+    </Stack.Navigator>
+  );
+};
+
+// Define Add Car Stack Navigator
+const AddCarStack = () => {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen
+        name="AddCarScreen"
+        component={AddCar}
+        options={{
+          header() {
+            return <Header />;
+          },
+        }}
+      />
     </Stack.Navigator>
   );
 };
@@ -60,7 +80,7 @@ const SettingStack = () => {
 const AppStack: FC = memo(() => {
   const getTabBarVisibility = (route: any) => {
     const routeName = getFocusedRouteNameFromRoute(route) ?? "Feed";
-    return routeName === "GameDetails" ? "none" : "flex";
+    return routeName === "Help" ? "none" : "flex";
   };
 
   return (
@@ -89,6 +109,23 @@ const AppStack: FC = memo(() => {
           ),
         })}
       />
+
+      <Tab.Screen
+        name="AddCar"
+        component={AddCarStack}
+        options={({ route }) => ({
+          tabBarStyle: {
+            display: getTabBarVisibility(route),
+          },
+          header(props) {
+            return <Header />;
+          },
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="ios-car-sport-sharp" size={size} color={color} />
+          ),
+        })}
+      />
+
       <Tab.Screen
         name="Settings"
         component={SettingStack}
