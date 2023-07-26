@@ -120,6 +120,11 @@ class Car implements IController {
   register = async (req: Request, resp: Response): Promise<void> => {
     const car: CarType = req.body;
 
+    const buffer = readFileSync(
+      path.join(__dirname, "../asset/img/bottle.png")
+    );
+    car.images = [buffer, buffer];
+
     const error: { [key: string]: string } =
       this.handleUserInputValidation(car);
     if (Object.keys(error).length > 0) {
