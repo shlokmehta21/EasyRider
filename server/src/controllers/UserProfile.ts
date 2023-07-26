@@ -138,45 +138,59 @@ class UserProfile implements IController {
     const session = new UserSession();
     const { id, email }: SessionData = session.getSessionData(sessionid);
 
-    console.log(email);
-
+    const updateData: any = {};
     // firstName validation
     const { firstName } = user;
-    if (!firstName) {
-      error.firstName = "First Name is required";
-    } else if (
-      firstName.length <= 2 ||
-      !regex.ALPHANUMERIC_WITH_STARTING_WITH_LETTER.test(firstName)
-    ) {
-      error.firstName = "Invalid First Name";
+    if (firstName) {
+      if (
+        firstName.length <= 2 ||
+        !regex.ALPHANUMERIC_WITH_STARTING_WITH_LETTER.test(firstName)
+      ) {
+        error.firstName = "Invalid First Name";
+      } else {
+        updateData.firstName = firstName;
+      }
     }
 
     // lastName validation
     const { lastName } = user;
-    if (!lastName) {
-      error.lastName = "Last Name is required";
-    } else if (
-      lastName.length <= 2 ||
-      !regex.ALPHANUMERIC_WITH_STARTING_WITH_LETTER.test(lastName)
-    ) {
-      error.lastName = "Invalid Last Name";
+    if (lastName) {
+      if (
+        lastName.length <= 2 ||
+        !regex.ALPHANUMERIC_WITH_STARTING_WITH_LETTER.test(lastName)
+      ) {
+        error.lastName = "Invalid Last Name";
+      } else {
+        updateData.lastName = lastName;
+      }
     }
+
     // Email validation
-    if (!user.email) {
-      error.email = "Email ID is required";
-    } else if (!regex.EMAIL.test(user.email)) {
-      error.email = "Invalid Email ID";
+    if (user.email) {
+      if (!regex.EMAIL.test(user.email)) {
+        error.email = "Invalid Email ID";
+      } else {
+        updateData.email = user.email;
+      }
     }
 
     // dob validation
     const { dob } = user;
-    if (!dob || !validDateChecker(dob)) {
-      error.dob = "Invalid Date of Birth";
+    if (dob) {
+      if (!validDateChecker(dob)) {
+        error.dob = "Invalid Date of Birth";
+      } else {
+        updateData.dob = dob;
+      }
     }
 
     const { profilePicture } = user;
-    if (profilePicture && !Buffer.isBuffer(profilePicture)) {
-      error.profilePicture = "Invalid profile picture format";
+    if (profilePicture) {
+      if (!Buffer.isBuffer(profilePicture)) {
+        error.profilePicture = "Invalid profile picture format";
+      } else {
+        updateData.profilePicture = profilePicture;
+      }
     }
 
     // license validation
@@ -184,40 +198,44 @@ class UserProfile implements IController {
     if (license && Object.keys(license).length > 0) {
       if (!license.number) {
         error.licenseNo = "License is required";
-      }
+      } else updateData.license.number = license.number;
       if (!license.images || license.images.length < 1) {
         error.licenseImage = "License Image is required";
-      }
+      } else updateData.license.images = license.images;
     }
 
     // domain validation
     const { domain } = user;
-    if (!domain || domain.length < 1) {
-      error.domain = "Organisation/Institution name is required";
-    } else {
+    if (domain && domain.length === 1) {
       const domainDetails = domain[0];
-      if (!domainDetails || !domainDetails.name) {
-        error.domainName = "Name is required";
-      } else if (
-        domainDetails.name.length <= 2 ||
-        !regex.ALPHANUMERIC_WITH_STARTING_WITH_LETTER.test(domainDetails.name)
-      ) {
-        error.domainName = "Invalid Domain Name";
+      updateData.domain = [{}];
+      if (domainDetails.name) {
+        if (
+          domainDetails.name.length <= 2 ||
+          !regex.ALPHANUMERIC_WITH_STARTING_WITH_LETTER.test(domainDetails.name)
+        ) {
+          error.domainName = "Invalid Domain Name";
+        } else {
+          updateData.domain[0].name = domainDetails.name;
+        }
       }
 
-      if (!domainDetails.domainID) {
-        error.domainID = "Organisation/Institution ID is required";
+      if (domainDetails.domainID) {
+        updateData.domain[0].domainID = domainDetails.domainID;
       }
 
-      if (
-        !domainDetails.startDate ||
-        !validDateChecker(domainDetails.startDate)
-      ) {
-        error.domainStartDate = "Invalid Start Date";
+      if (domainDetails.startDate) {
+        if (!validDateChecker(domainDetails.startDate)) {
+          error.domainStartDate = "Invalid End Date";
+        } else {
+          updateData.domain[0].startDate = domainDetails.startDate;
+        }
       }
 
-      if (domainDetails.endDate && !validDateChecker(domainDetails.endDate)) {
-        error.domainEndDate = "Invalid End Date";
+      if (domainDetails.endDate) {
+        if (!validDateChecker(domainDetails.endDate)) {
+          error.domainEndDate = "Invalid End Date";
+        } else updateData.domain[0].endDate = domainDetails.endDate;
       }
     }
 
@@ -252,22 +270,7 @@ class UserProfile implements IController {
       }
 
       // Create the user in the database
-      const result = await db.getModel().findOneAndUpdate(
-        { id },
-        {
-          firstName,
-          lastName,
-          email: user.email,
-          dob,
-          profilePicture,
-          domain: {
-            startDate: domain[0].startDate,
-            endDate: domain[0].endDate,
-            name: domain[0].name,
-            domainID: domain[0].domainID,
-          },
-        }
-      );
+      const result = await db.getModel().findOneAndUpdate({ id }, updateData);
 
       if (result instanceof Error) {
         new ErrorController().handleError(
@@ -282,18 +285,21 @@ class UserProfile implements IController {
       }
 
       // Set the session ID as a cookie in the response
-      resp.cookie(
-        "sessionid",
-        session.createUniqueSession({
-          id,
-          email: user.email,
-        }),
-        {
-          httpOnly: true,
-          // secure: true,
-          sameSite: "strict",
-        }
-      );
+      if (user.email) {
+        resp.cookie(
+          "sessionid",
+          session.createUniqueSession({
+            id,
+            email: user.email,
+          }),
+          {
+            httpOnly: true,
+            // secure: true,
+            sameSite: "strict",
+          }
+        );
+      }
+
       resp.status(200).json(true);
     } catch (err) {
       console.error("An error occurred while updating the user:", err);
