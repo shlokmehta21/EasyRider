@@ -26,10 +26,12 @@ const routes: RouteConfig = {
   },
   USER_PROFILE: {
     default: "/user",
-    profilePicture: "/user/profile-picture",
+    profilePicture: "/user/profile-picture/:id",
     forgotPassword: "/forgot-password",
     resetPassword: "/reset-password/:token",
-    update: "/user/update-profile",
+    update: "/user/profile",
+    domainImages: "/user/domain-images",
+    updateLocale: "/user/locale",
   },
 };
 

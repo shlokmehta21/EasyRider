@@ -10,6 +10,7 @@ import UserDbModel from "../schemas/User";
 import User from "../models/User";
 import SessionData from "../models/SessionData";
 import UserSession from "../utils/session";
+import { ILocation } from "../models/Location";
 
 class Ride implements IController {
   router: Router;

@@ -35,13 +35,26 @@ class UserProfile implements IController {
     this.router.post(this.path.resetPassword as string, this.resetPassword);
     this.router.use(this.path.default as string, CheckUserAuthentication);
     this.router.post(this.path.default as string, this.getUserProfile);
-    this.router.post(this.path.update as string, this.updateProfile);
+    this.router.put(this.path.update as string, this.updateProfile);
+    this.router.post(
+      this.path.profilePicture as string,
+      this.updateProfilePicture
+    );
+    this.router.get(this.path.profilePicture as string, this.getProfilePicture);
+    this.router.post(this.path.domainImages as string, this.getDomainImages);
+    this.router.put(this.path.updateLocale as string, this.updateLocale);
     this.router.post(
       this.path.profilePicture as string,
       this.getProfilePicture
     );
   }
-  updateProfile = async (req: Request, resp: Response): Promise<void> => {
+  updateLocale = async (req: Request, resp: Response): Promise<void> => {
+    const { locale }: { locale: string } = req.body;
+  };
+  updateProfilePicture = async (
+    req: Request,
+    resp: Response
+  ): Promise<void> => {
     const user: User = req.body;
     const error: { [key: string]: string } = {};
 
@@ -50,14 +63,82 @@ class UserProfile implements IController {
       sessionid
     );
 
-    // Read image files asynchronously
-    const imagesBuffer = await Promise.all([
-      readFile(path.join(__dirname, "../asset/img/bottle.png")),
-      readFile(path.join(__dirname, "../asset/img/bottle.png")),
-    ]);
+    if (user.profilePicture && !Buffer.isBuffer(user.profilePicture)) {
+      error.profilePicture = "Invalid profile picture format";
+    }
 
-    // Assign image buffers to user domain
-    user.domain[0].images = imagesBuffer;
+    if (Object.keys(error).length > 0) {
+      new ErrorController().handleError(
+        {
+          code: 400,
+          customMessage: error,
+        },
+        req,
+        resp
+      );
+      return;
+    }
+
+    try {
+      const db = new UserDbModel();
+      const isUserExists: boolean = await db.findIfExists({
+        id,
+        email: email,
+      });
+      if (!isUserExists) {
+        new ErrorController().handleError(
+          {
+            code: 400,
+            message: "User doesn't exist",
+          },
+          req,
+          resp
+        );
+        return;
+      }
+
+      // Create the user in the database
+      const result = await db
+        .getModel()
+        .findOneAndUpdate({ id }, { profilePicture: user.profilePicture });
+
+      if (result instanceof Error) {
+        new ErrorController().handleError(
+          {
+            code: 500,
+            message: "Error Occurred while updating user's picture",
+          },
+          req,
+          resp
+        );
+        return;
+      }
+
+      resp.status(200).json(true);
+    } catch (err) {
+      console.error(
+        "An error occurred while updating the user's picture:",
+        err
+      );
+      new ErrorController().handleError(
+        {
+          code: 500,
+          message: "Internal server error",
+        },
+        req,
+        resp
+      );
+    }
+  };
+  updateProfile = async (req: Request, resp: Response): Promise<void> => {
+    const user: User = req.body;
+    const error: { [key: string]: string } = {};
+
+    const sessionid: string = req.cookies.sessionid as string;
+    const session = new UserSession();
+    const { id, email }: SessionData = session.getSessionData(sessionid);
+
+    console.log(email);
 
     // firstName validation
     const { firstName } = user;
@@ -88,22 +169,14 @@ class UserProfile implements IController {
     }
 
     // dob validation
-    if (!user.dob || !validDateChecker(user.dob)) {
+    const { dob } = user;
+    if (!dob || !validDateChecker(dob)) {
       error.dob = "Invalid Date of Birth";
     }
 
-    // password validation
-    const { password, confirmPassword } = user;
-    if (!password) {
-      error.password = "Password is required";
-    } else if (password.length < 6 || !regex.PASSWORD.test(password)) {
-      error.password = "Invalid Password";
-    } else if (password !== confirmPassword) {
-      error.confirmPassword = "Password must match";
-    } else {
-      // Hash the password
-      const hashedPassword = await bcrypt.hash(password, 10);
-      user.password = hashedPassword;
+    const { profilePicture } = user;
+    if (profilePicture && !Buffer.isBuffer(profilePicture)) {
+      error.profilePicture = "Invalid profile picture format";
     }
 
     // license validation
@@ -146,10 +219,6 @@ class UserProfile implements IController {
       if (domainDetails.endDate && !validDateChecker(domainDetails.endDate)) {
         error.domainEndDate = "Invalid End Date";
       }
-
-      if (!domainDetails.images || domainDetails.images.length < 2) {
-        error.domainIDImages = "Front and Back side images are required";
-      }
     }
 
     if (Object.keys(error).length > 0) {
@@ -170,11 +239,11 @@ class UserProfile implements IController {
         id,
         email: email,
       });
-      if (isUserExists) {
+      if (!isUserExists) {
         new ErrorController().handleError(
           {
-            code: 500,
-            message: registerErrorLabels.USER_ALREADY_EXISTS,
+            code: 400,
+            message: "User doesn't exist",
           },
           req,
           resp
@@ -183,13 +252,28 @@ class UserProfile implements IController {
       }
 
       // Create the user in the database
-      const result = await db.getModel().findByIdAndUpdate({ id }, user);
+      const result = await db.getModel().findOneAndUpdate(
+        { id },
+        {
+          firstName,
+          lastName,
+          email: user.email,
+          dob,
+          profilePicture,
+          domain: {
+            startDate: domain[0].startDate,
+            endDate: domain[0].endDate,
+            name: domain[0].name,
+            domainID: domain[0].domainID,
+          },
+        }
+      );
 
       if (result instanceof Error) {
         new ErrorController().handleError(
           {
             code: 500,
-            message: "Error Occurred while creating user",
+            message: "Error Occurred while updating user",
           },
           req,
           resp
@@ -197,9 +281,22 @@ class UserProfile implements IController {
         return;
       }
 
+      // Set the session ID as a cookie in the response
+      resp.cookie(
+        "sessionid",
+        session.createUniqueSession({
+          id,
+          email: user.email,
+        }),
+        {
+          httpOnly: true,
+          // secure: true,
+          sameSite: "strict",
+        }
+      );
       resp.status(200).json(true);
     } catch (err) {
-      console.error("An error occurred while registering the user:", err);
+      console.error("An error occurred while updating the user:", err);
       new ErrorController().handleError(
         {
           code: 500,
@@ -227,22 +324,36 @@ class UserProfile implements IController {
       { id },
       {
         id: 1,
+        _id: 0,
         firstName: 1,
         lastName: 1,
-        domain: 1,
-        email: { $concat: [{ $substr: ["$email", 0, 3] }, "XXX", ".com"] },
-        profilePicture: 1,
+        email: { $concat: [{ $substr: ["$email", 0, 3] }, "@XXX.XXX"] },
         dob: 1,
+        locale: 1,
         "license.number": {
           $concat: [{ $substr: ["$license.number", 0, 3] }, "XXX"],
         },
         phoneNumber: {
           $concat: [{ $substr: ["$phoneNumber", 0, 3] }, "-XXX-XXXXX"],
         },
+        domain: {
+          id: 1,
+          name: 1,
+          domainID: 1,
+          startDate: 1,
+          endDate: 1,
+        },
       }
     )
       .then((user: User | null) => {
         if (user) {
+          if (
+            user.license &&
+            user.license.number &&
+            user.license.number === "XXX"
+          ) {
+            user.set("license", undefined, { strict: false });
+          }
           resp.status(200).json(user);
         } else {
           new ErrorController().handleError(
@@ -263,7 +374,7 @@ class UserProfile implements IController {
   };
 
   getProfilePicture = (req: Request, resp: Response): void => {
-    const { id }: { id: string } = req.body as { id: string };
+    const { id }: { id: string } = req.params as { id: string };
     if (!id) {
       new ErrorController().handleError(
         { code: 400, message: "User ID is required" },
@@ -278,12 +389,13 @@ class UserProfile implements IController {
       { id },
       {
         id: 1,
+        _id: 0,
         profilePicture: 1,
       }
     )
       .then((user: User | null) => {
         if (user) {
-          resp.status(200).json({ profilePicture: user.profilePicture });
+          resp.status(200).json(user);
         } else {
           new ErrorController().handleError(
             { code: 400, message: "User Not Found" },
@@ -293,6 +405,51 @@ class UserProfile implements IController {
         }
       })
       .catch((err: Error) => {
+        new ErrorController().handleError(
+          { code: 500, message: "Internal Server Error Occurred" },
+          req,
+          resp
+        );
+      });
+  };
+
+  getDomainImages = (req: Request, resp: Response): void => {
+    const { id }: { id: string[] } = req.body || [];
+    if (id.length === 0) {
+      new ErrorController().handleError(
+        { code: 400, message: "Domain ID is required" },
+        req,
+        resp
+      );
+      return;
+    }
+
+    const db = new UserDbModel().getModel();
+    db.find(
+      { "domain.id": { $in: id } },
+      {
+        id: 1,
+        _id: 0,
+        domain: {
+          id: 1,
+          domainID: 1,
+          images: 1,
+        },
+      }
+    )
+      .then((users: User[] | null) => {
+        if (users && users.length > 0) {
+          resp.status(200).json({ users });
+        } else {
+          new ErrorController().handleError(
+            { code: 400, message: "Domain Not Found" },
+            req,
+            resp
+          );
+        }
+      })
+      .catch((err: Error) => {
+        console.log(err);
         new ErrorController().handleError(
           { code: 500, message: "Internal Server Error Occurred" },
           req,
