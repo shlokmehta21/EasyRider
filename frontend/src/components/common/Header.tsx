@@ -20,7 +20,6 @@ const Header: FC<HeaderProps> = ({}) => {
           justifyContent: "space-between",
           paddingHorizontal: 15,
           marginTop: 10,
-          marginBottom: 10,
           paddingBottom: 8,
           borderColor: "#a9a9a9",
           borderBottomWidth: 0.3,

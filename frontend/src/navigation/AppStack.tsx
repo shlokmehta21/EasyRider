@@ -1,6 +1,7 @@
 import React, { FC, memo } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 import { getFocusedRouteNameFromRoute } from "@react-navigation/native";
 import Home from "../screens/Home.screen";
 import Account from "../screens/Account.screen";
@@ -10,9 +11,33 @@ import { Platform } from "react-native";
 import Settings from "../screens/Settings.screen";
 import AddCar from "../screens/AddCar.screen";
 import Chat from "../screens/Chat.screen";
+import AddRide from "../screens/AddRide.screen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
+const TopTabs = createMaterialTopTabNavigator();
+
+// Define Top Tabs Group
+const TopTabsGroup = () => {
+  return (
+    <TopTabs.Navigator
+      screenOptions={{
+        tabBarLabelStyle: {
+          fontSize: 13,
+          fontWeight: "bold",
+        },
+        tabBarIndicatorStyle: {
+          height: 2.5,
+          borderRadius: 5,
+          backgroundColor: "#262829",
+        },
+      }}
+    >
+      <TopTabs.Screen name="Feed" component={Home} />
+      <TopTabs.Screen name="Add a ride" component={AddRide} />
+    </TopTabs.Navigator>
+  );
+};
 
 // Define Home Stack Navigator
 const HomeStack = () => {
@@ -20,7 +45,7 @@ const HomeStack = () => {
     <Stack.Navigator>
       <Stack.Screen
         name="Home"
-        component={Home}
+        component={TopTabsGroup}
         options={{
           header() {
             return <Header />;

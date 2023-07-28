@@ -18,7 +18,7 @@ const Home: FC<HomeProps> = ({}) => {
     <ScrollView>
       <View style={styles.container}>
         {/* Button group */}
-        <View style={styles.btnGroupContainer}>
+        {/* <View style={styles.btnGroupContainer}>
           <View style={[styles.buttonContainer, styles.active, styles.left]}>
             <TouchableOpacity>
               <Text style={[styles.btnText, styles.active]}>Book a ride</Text>
@@ -29,7 +29,7 @@ const Home: FC<HomeProps> = ({}) => {
               <Text style={[styles.btnText]}>Add a ride</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </View> */}
 
         {/* Search */}
         <View style={styles.searchContainer}>
