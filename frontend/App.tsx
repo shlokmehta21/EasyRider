@@ -4,17 +4,20 @@ import { DefaultTheme } from "@react-navigation/native";
 import { QueryClient, QueryClientProvider } from "react-query";
 import { UserProvider } from "./src/context/UserContext";
 import AppNav from "./src/navigation/AppNav";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 const App: React.FC = () => {
   const queryClient = new QueryClient();
   return (
-    <QueryClientProvider client={queryClient}>
-      <UserProvider>
-        <SafeAreaView style={styles.safeArea}>
-          <AppNav />
-        </SafeAreaView>
-      </UserProvider>
-    </QueryClientProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <QueryClientProvider client={queryClient}>
+        <UserProvider>
+          <SafeAreaView style={styles.safeArea}>
+            <AppNav />
+          </SafeAreaView>
+        </UserProvider>
+      </QueryClientProvider>
+    </GestureHandlerRootView>
   );
 };
 

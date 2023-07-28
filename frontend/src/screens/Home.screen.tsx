@@ -1,8 +1,7 @@
-import { FC } from "react";
+import { FC, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Button,
+  Linking,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -10,38 +9,121 @@ import {
   View,
 } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
+import * as Location from "expo-location";
+import MapView from "react-native-maps";
+import device from "../constants/device";
+import BottomSheet from "@gorhom/bottom-sheet";
 
 interface HomeProps {}
 
 const Home: FC<HomeProps> = ({}) => {
-  return (
-    <ScrollView>
-      <View style={styles.container}>
-        {/* Button group */}
-        {/* <View style={styles.btnGroupContainer}>
-          <View style={[styles.buttonContainer, styles.active, styles.left]}>
-            <TouchableOpacity>
-              <Text style={[styles.btnText, styles.active]}>Book a ride</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={[styles.buttonContainer, styles.right]}>
-            <TouchableOpacity>
-              <Text style={[styles.btnText]}>Add a ride</Text>
-            </TouchableOpacity>
-          </View>
-        </View> */}
+  const [coordinates, setCoords] = useState<{
+    lat: number | null;
+    lon: number | null;
+  }>({ lat: null, lon: null });
+  const [showMap, setShowMap] = useState(false);
+  const bottomSheetRef = useRef<BottomSheet>(null);
 
-        {/* Search */}
-        <View style={styles.searchContainer}>
-          <TextInput placeholder="Where to?" style={styles.search} />
-          <TouchableOpacity style={styles.searchBtn}>
-            <FontAwesome name="search" size={20} color="white" />
+  useEffect(() => {
+    const getLocation = async () => {
+      // get exisiting locaton permissions first
+      const { status: existingStatus } =
+        await Location.requestForegroundPermissionsAsync();
+      let finalStatus = existingStatus;
+
+      // ask again to grant locaton permissions (if not already allowed)
+      if (existingStatus !== "granted") {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        finalStatus = status;
+      }
+
+      // still not allowed to use location?
+      if (finalStatus !== "granted") {
+        return;
+      }
+
+      const { coords } = await Location.getCurrentPositionAsync();
+
+      setCoords({ lat: coords.latitude, lon: coords.longitude });
+      setShowMap(true);
+    };
+
+    getLocation().catch(console.error);
+  }, []);
+
+  // variables
+  const snapPoints = useMemo(() => ["20%", "25%", "60%"], []);
+
+  // callbacks
+  const handleSheetChanges = useCallback((index: number) => {
+    console.log("handleSheetChanges", index);
+  }, []);
+
+  // open bottom sheet
+  const handlePresentModalPress = useCallback(() => {
+    bottomSheetRef.current?.expand();
+  }, []);
+
+  return (
+    <View style={styles.container}>
+      {showMap && (
+        <>
+          {/* Search */}
+          <View style={styles.searchContainer}>
+            <TextInput
+              placeholder="Where to?"
+              style={styles.search}
+              placeholderTextColor="#000"
+            />
+            <TouchableOpacity
+              style={styles.searchBtn}
+              onPress={handlePresentModalPress}
+            >
+              <FontAwesome name="search" size={20} color="white" />
+            </TouchableOpacity>
+          </View>
+
+          <MapView
+            followsUserLocation
+            region={{
+              latitude: coordinates.lat || 0,
+              longitude: coordinates.lon || 0,
+              latitudeDelta: 0.01,
+              longitudeDelta: 0.01,
+            }}
+            showsUserLocation
+            style={styles.map}
+          />
+        </>
+      )}
+
+      {!showMap && (
+        <View style={styles.containerNoLocation}>
+          <Text style={styles.textLocationNeeded}>
+            We need your location data.
+          </Text>
+          <TouchableOpacity
+            onPress={() => Linking.openURL("app-settings:")}
+            style={styles.btnGoTo}
+          >
+            <Text style={styles.btnGoToText}>Go to settings</Text>
           </TouchableOpacity>
         </View>
+      )}
 
-        {/* List of rides */}
-      </View>
-    </ScrollView>
+      {/* List of rides */}
+      <BottomSheet
+        ref={bottomSheetRef}
+        index={-1}
+        snapPoints={snapPoints}
+        enablePanDownToClose
+        onChange={handleSheetChanges}
+      >
+        <View style={styles.contentContainer}>
+          <Text>Ride List 🎉</Text>
+        </View>
+      </BottomSheet>
+    </View>
   );
 };
 
@@ -49,60 +131,65 @@ export default Home;
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 10,
-  },
-  btnGroupContainer: {
     flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
   },
-  buttonContainer: {
+  contentContainer: {
     flex: 1,
-    backgroundColor: "#F2F2F2",
-    height: 45,
-    justifyContent: "center",
     alignItems: "center",
   },
-  active: {
-    backgroundColor: "black",
-    color: "white",
-  },
-  left: {
-    borderTopLeftRadius: 10,
-    borderBottomLeftRadius: 10,
-  },
-  right: {
-    borderTopRightRadius: 10,
-    borderBottomRightRadius: 10,
-  },
-  btnText: {
-    fontSize: 16,
-    fontWeight: "bold",
+  map: {
+    flex: 1,
+    height: device.height,
+    position: "absolute",
+    width: device.width,
+    zIndex: -1,
   },
   searchContainer: {
+    paddingHorizontal: 10,
     marginTop: 15,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-
   search: {
     flex: 1,
-    backgroundColor: "#F9FBFC",
-    borderColor: "#e8e8e8",
+    backgroundColor: "#ffffff",
+    borderColor: "#ffffff",
     borderWidth: 1,
+    fontWeight: "700",
     borderRadius: 5,
-    paddingVertical: Platform.OS === "ios" ? 15 : 10,
-    paddingHorizontal: 10,
+    paddingVertical: Platform.OS === "ios" ? 20 : 15,
+    paddingHorizontal: 15,
     marginBottom: 15,
   },
   searchBtn: {
     backgroundColor: "black",
     marginLeft: 10,
     marginBottom: 18,
-    padding: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 15,
     borderRadius: 10,
     alignSelf: "center",
+  },
+  containerNoLocation: {
+    alignItems: "center",
+    height: "100%",
+    justifyContent: "center",
+    position: "absolute",
+    width: device.width,
+  },
+  textLocationNeeded: {
+    fontSize: 20,
+    marginBottom: 16,
+  },
+  btnGoTo: {
+    backgroundColor: "black",
+    borderRadius: 3,
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+  },
+  btnGoToText: {
+    color: "white",
+    fontSize: 16,
   },
 });

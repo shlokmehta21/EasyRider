@@ -193,9 +193,10 @@ const styles = StyleSheet.create({
   },
   title: {
     fontWeight: "bold",
-    fontSize: 40,
+    fontSize: 35,
     color: "grey",
-    marginBottom: 15,
+    marginTop: 20,
+    marginBottom: 20,
   },
   errorMsg: {
     alignSelf: "flex-start",
