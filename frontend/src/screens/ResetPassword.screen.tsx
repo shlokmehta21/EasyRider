@@ -15,6 +15,7 @@ import { useMutation, useQueryClient } from "react-query";
 import { useRoute } from "@react-navigation/native";
 import axios from "axios";
 import * as Yup from "yup";
+import Toast from "react-native-toast-message";
 
 const ValidationSchema = Yup.object().shape({
   Email: Yup.string().email("Invalid email").required("Email is Required"),
@@ -76,6 +77,10 @@ const ResetPassword: FC<RestPassword> = ({ navigation }) => {
     onSuccess: (data) => {
       console.log(data);
       navigation.navigate("Login");
+      Toast.show({
+        type: "success",
+        text1: "Password Reset Successfully 🚀",
+      });
     },
     onError: () => {},
     onSettled: () => {

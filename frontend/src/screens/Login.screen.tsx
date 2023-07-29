@@ -20,6 +20,7 @@ import jwt_decode from "jwt-decode";
 import AxiosInstance from "../Utils/AxiosConfig";
 import { getSessionId } from "../Utils/Common";
 import { userStorage } from "../types/UserStorage";
+import Toast from "react-native-toast-message";
 
 const ValidationSchema = Yup.object().shape({
   Email: Yup.string().email("Invalid email").required("Email is Required"),
@@ -81,6 +82,11 @@ const Login: React.FC<LoginProps> = ({ navigation }) => {
       setUser(userObj);
       // @ts-ignore
       setIsLogged(true);
+
+      Toast.show({
+        type: "success",
+        text1: "Login Success 🚀",
+      });
 
       console.log("userDATA", data);
 

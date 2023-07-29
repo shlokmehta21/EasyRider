@@ -13,6 +13,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { UserContext } from "../context/UserContext";
 import axios from "axios";
 import AxiosInstance from "../Utils/AxiosConfig";
+import Toast from "react-native-toast-message";
 
 interface Settings {
   navigation: NativeStackNavigationProp<any, any>;
@@ -47,6 +48,11 @@ const Settings: FC<Settings> = ({ navigation }) => {
         setIsLogged(false);
         // @ts-ignore
         setUserStorage(null);
+
+        Toast.show({
+          type: "success",
+          text1: "Logged out successfully 👋",
+        });
         console.log(result);
       } catch (error) {
         console.log(error);

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { TextInput, View, StyleSheet, KeyboardTypeOptions } from "react-native";
 
 type CustomInputProps = {
@@ -29,10 +29,22 @@ export const CustomInput: React.FC<CustomInputProps> = ({
   maxLength,
   autoCapitalizeEmail,
 }) => {
+  const [focused, setFocused] = useState(false);
+
+  // Function to handle focus events
+  const handleFocus = () => {
+    setFocused(true);
+  };
+
+  // Function to handle blur events
+  const handleBlur = () => {
+    setFocused(false);
+  };
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, focused && styles.focusedContainer]}>
       <TextInput
-        style={styles.textInput}
+        style={[styles.textInput]}
         placeholder={placeholder}
         secureTextEntry={secureTextEntry}
         value={value}
@@ -43,6 +55,8 @@ export const CustomInput: React.FC<CustomInputProps> = ({
         maxLength={maxLength}
         placeholderTextColor="#919090"
         autoCapitalize={autoCapitalizeEmail}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
       />
     </View>
   );
@@ -52,8 +66,8 @@ const styles = StyleSheet.create({
   container: {
     width: "100%",
     backgroundColor: "#F9FBFC",
-    borderColor: "#e8e8e8",
-    borderWidth: 1,
+    borderColor: "#eaeaea",
+    borderWidth: 1.5,
     borderRadius: 5,
     paddingVertical: 15,
     paddingHorizontal: 10,
@@ -61,5 +75,15 @@ const styles = StyleSheet.create({
   },
   textInput: {
     fontWeight: "bold",
+  },
+  focusedContainer: {
+    width: "100%",
+    backgroundColor: "#F9FBFC",
+    borderColor: "#878787",
+    borderWidth: 1.5,
+    borderRadius: 5,
+    paddingVertical: 15,
+    paddingHorizontal: 10,
+    marginBottom: 15,
   },
 });

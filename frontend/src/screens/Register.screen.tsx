@@ -21,6 +21,7 @@ import axios from "axios";
 import { CreateUserResponse } from "../types/CreateUserResponse";
 import { useMutation, useQueryClient } from "react-query";
 import AxiosInstance from "../Utils/AxiosConfig";
+import Toast from "react-native-toast-message";
 
 const ValidationSchema = Yup.object().shape({
   FirstName: Yup.string().required("First Name is Required"),
@@ -80,6 +81,10 @@ const Register: React.FC<LoginProps> = ({ navigation }) => {
       console.log(data);
       navigation.navigate("Login");
       setNext(false);
+      Toast.show({
+        type: "success",
+        text1: "Registration Success 🚀",
+      });
     },
     onError: () => {},
     onSettled: () => {
