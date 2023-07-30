@@ -333,15 +333,11 @@ class UserProfile implements IController {
         _id: 0,
         firstName: 1,
         lastName: 1,
-        email: { $concat: [{ $substr: ["$email", 0, 3] }, "@XXX.XXX"] },
+        email: 1,
         dob: 1,
         locale: 1,
-        "license.number": {
-          $concat: [{ $substr: ["$license.number", 0, 3] }, "XXX"],
-        },
-        phoneNumber: {
-          $concat: [{ $substr: ["$phoneNumber", 0, 3] }, "-XXX-XXXXX"],
-        },
+        "license.number": 1,
+        phoneNumber: 1,
         domain: {
           id: 1,
           name: 1,
