@@ -1,4 +1,5 @@
 import { Document } from "mongoose";
+import { ILocation } from "./Location";
 
 export interface Ride extends Document {
   id: string;

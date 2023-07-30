@@ -11,6 +11,7 @@ import User from "../models/User";
 import SessionData from "../models/SessionData";
 import UserSession from "../utils/session";
 import { ILocation } from "../models/Location";
+import { validDateChecker } from "../utils/date";
 
 class Ride implements IController {
   router: Router;
@@ -34,7 +35,7 @@ class Ride implements IController {
     this.router.post(this.path.cancel as string, this.cancel);
   }
 
-  async findAllRides(req: Request, resp: Response): Promise<void> {
+  findAllRides = async (req: Request, resp: Response): Promise<void> => {
     try {
       const {
         pickUp,
@@ -45,13 +46,11 @@ class Ride implements IController {
         total = -1,
       }: {
         pickUp: {
-          lat: number;
-          long: number;
+          location: ILocation;
           time: Date;
         };
         dropOff: {
-          lat: number;
-          long: number;
+          location: ILocation;
           time: Date;
         };
         pickUpDate?: Date;
@@ -69,9 +68,13 @@ class Ride implements IController {
         matchFilter.pickUp = { time: pickUp.time };
       }
 
-      if (dropOff.lat && dropOff.long) {
-        matchFilter["dropOff.lat"] = dropOff.lat;
-        matchFilter["dropOff.long"] = dropOff.long;
+      if (
+        dropOff.location &&
+        dropOff.location.coordinates &&
+        dropOff.location.coordinates.length === 2
+      ) {
+        // matchFilter["dropOff.lat"] = dropOff.lat;
+        // matchFilter["dropOff.long"] = dropOff.long;
       }
 
       if (dropOff.time) {
@@ -82,7 +85,7 @@ class Ride implements IController {
         { $match: matchFilter },
         {
           $geoNear: {
-            near: { type: "Point", coordinates: [pickUp.long, pickUp.lat] },
+            near: { type: "Point", coordinates: pickUp.location.coordinates },
             distanceField: "distance",
             maxDistance: 25000, // distance in meters (25 km)
             spherical: true,
@@ -122,9 +125,9 @@ class Ride implements IController {
       console.error("An error occurred while fetching rides:", error);
       resp.status(500).json({ error: "An error occurred" });
     }
-  }
+  };
 
-  async getRideDetails(req: Request, resp: Response): Promise<void> {
+  getRideDetails = async (req: Request, resp: Response): Promise<void> => {
     try {
       const { id }: { id: string } = req.params as { id: string };
       if (!id) {
@@ -144,9 +147,19 @@ class Ride implements IController {
       console.error("An error occurred while fetching ride details:", error);
       new ErrorController().handleInternalServer(resp);
     }
-  }
+  };
 
-  async add(req: Request, resp: Response): Promise<void> {
+  add = async (req: Request, resp: Response): Promise<void> => {
+    const sessionId: string = req.cookies.sessionid as string;
+    const { id }: SessionData = new UserSession().getSessionData(sessionId);
+    if (!id) {
+      new ErrorController().handleError(
+        { code: 401, message: "UnAuthorized Request" },
+        req,
+        resp
+      );
+      return;
+    }
     const rideData: RideModel = req.body;
     const error: { [key: string]: string } = this.rideInputValidation(rideData);
 
@@ -161,8 +174,8 @@ class Ride implements IController {
 
     try {
       // Save the new ride to the database
-      const newRide = new RideDbModel(rideData);
-      await newRide.save();
+      const db = new RideDbModel();
+      await db.getModel().create({ ...rideData, userId: id });
       resp.status(200).json(true);
     } catch (error) {
       console.error("An error occurred while adding the ride:", error);
@@ -172,9 +185,19 @@ class Ride implements IController {
         resp
       );
     }
-  }
+  };
 
-  async update(req: Request, resp: Response): Promise<void> {
+  update = async (req: Request, resp: Response): Promise<void> => {
+    const sessionId: string = req.cookies.sessionid as string;
+    const { id }: SessionData = new UserSession().getSessionData(sessionId);
+    if (!id) {
+      new ErrorController().handleError(
+        { code: 401, message: "UnAuthorized Request" },
+        req,
+        resp
+      );
+      return;
+    }
     const rideData: RideModel = req.body;
     const error: { [key: string]: string } = this.rideInputValidation(rideData);
 
@@ -207,9 +230,9 @@ class Ride implements IController {
       console.error("An error occurred while updating the ride:", error);
       new ErrorController().handleInternalServer(resp);
     }
-  }
+  };
 
-  async delete(req: Request, resp: Response): Promise<void> {
+  delete = async (req: Request, resp: Response): Promise<void> => {
     const { id }: { id: string } = req.params as { id: string };
 
     if (!id || !id.trim()) {
@@ -239,9 +262,9 @@ class Ride implements IController {
         resp
       );
     }
-  }
+  };
 
-  async book(req: Request, resp: Response): Promise<void> {
+  book = async (req: Request, resp: Response): Promise<void> => {
     const sessionid: string = req.cookies.sessionid as string;
     const { id, email }: SessionData = new UserSession().getSessionData(
       sessionid
@@ -250,9 +273,9 @@ class Ride implements IController {
     const rideData: RideRequest = req.body;
 
     // TODO: Implement booking logic
-  }
+  };
 
-  async cancel(req: Request, resp: Response): Promise<void> {
+  cancel = async (req: Request, resp: Response): Promise<void> => {
     const { id }: { id: string } = req.params as { id: string };
     if (!id) {
       new ErrorController().handleError(
@@ -271,22 +294,15 @@ class Ride implements IController {
       console.error("An error occurred while cancelling the ride:", error);
       new ErrorController().handleInternalServer(resp);
     }
-  }
+  };
 
   rideInputValidation(rideData: RideModel): { [key: string]: string } {
     const error: { [key: string]: string } = {};
 
     // Validate rideData
-    if (typeof rideData.userId !== "string" || !rideData.userId.trim()) {
-      error.userId = "Invalid User ID";
-    } else {
-      rideData.userId = rideData.userId.trim();
-    }
-
-    if (typeof rideData.carId !== "string" || !rideData.carId.trim()) {
+    if (typeof rideData.carId !== "string") {
       error.carId = "Invalid Car ID";
     } else {
-      rideData.carId = rideData.carId.trim();
       const db = new UserDbModel();
       db.findOneByParams({ "car.id": rideData.carId })
         .then((user: User | null) => {
@@ -306,11 +322,9 @@ class Ride implements IController {
             }
           }
         })
-        .catch((error) => {
-          console.error(
-            "An error occurred while validating the car ID:",
-            error
-          );
+        .catch((err) => {
+          error.errors = "Internal server error occurred";
+          return;
         });
     }
 
@@ -318,29 +332,29 @@ class Ride implements IController {
       !rideData.pickUp ||
       typeof rideData.pickUp !== "object" ||
       typeof rideData.pickUp.location !== "object" ||
-      typeof rideData.pickUp.location.lat !== "number" ||
-      typeof rideData.pickUp.location.long !== "number"
+      typeof rideData.pickUp.location.coordinates !== "object" ||
+      rideData.pickUp.location.coordinates.length !== 2 ||
+      typeof rideData.pickUp.location.coordinates[0] !== "number" ||
+      typeof rideData.pickUp.location.coordinates[1] !== "number"
     ) {
       error.pickUp = "Invalid Pickup Location";
+    } else if (!validDateChecker(rideData.pickUp.time)) {
+      error.pickUpTime = "Invalid Pickup Time";
     }
 
     if (
       !rideData.dropOff ||
       typeof rideData.dropOff !== "object" ||
       typeof rideData.dropOff.location !== "object" ||
-      typeof rideData.dropOff.location.lat !== "number" ||
-      typeof rideData.dropOff.location.long !== "number"
+      typeof rideData.dropOff.location.coordinates !== "object" ||
+      rideData.dropOff.location.coordinates.length !== 2 ||
+      typeof rideData.dropOff.location.coordinates[0] !== "number" ||
+      typeof rideData.dropOff.location.coordinates[1] !== "number"
     ) {
       error.dropOff = "Invalid Dropoff Location";
+    } else if (!validDateChecker(rideData.dropOff.time)) {
+      error.dropOffTime = "Invalid Dropoff Time";
     }
-
-    if (
-      rideData.isAvailable !== undefined &&
-      typeof rideData.isAvailable !== "boolean"
-    ) {
-      error.isAvailable = "Invalid Availability";
-    }
-
     return error;
   }
 }
@@ -351,9 +365,11 @@ interface RideRequest {
   noOfSeats: number;
   pickUp: {
     location: ILocation;
+    time: Date;
   };
   dropOff: {
     location: ILocation;
+    time: Date;
   };
 }
 

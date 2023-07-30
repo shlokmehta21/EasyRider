@@ -8,7 +8,7 @@ const RideSchema = new mongoose.Schema({
   id: {
     type: String,
     required: [true, "Ride ID is required"],
-    default: uuidv4(),
+    default: uuidv4,
   },
   createdAt: {
     type: Date,
@@ -32,16 +32,16 @@ const RideSchema = new mongoose.Schema({
   },
   seatsLeft: {
     type: Number,
-    required: [true, "Seats Left is required"],
   },
   pickUp: {
     location: {
-      lat: {
-        type: Number,
-        required: true,
+      type: {
+        type: String,
+        enum: ["Point"],
+        default: "Point",
       },
-      long: {
-        type: Number,
+      coordinates: {
+        type: [Number],
         required: true,
       },
     },
@@ -52,12 +52,13 @@ const RideSchema = new mongoose.Schema({
   },
   dropOff: {
     location: {
-      lat: {
-        type: Number,
-        required: true,
+      type: {
+        type: String,
+        enum: ["Point"],
+        default: "Point",
       },
-      long: {
-        type: Number,
+      coordinates: {
+        type: [Number],
         required: true,
       },
     },
@@ -71,17 +72,27 @@ const RideSchema = new mongoose.Schema({
     default: true,
   },
 });
-RideSchema.index({ "pickUp.location": "2dsphere" });
+// Attach the pre middleware to the schema
+RideSchema.pre("save", function (next) {
+  if (!this.seatsLeft) {
+    this.seatsLeft = this.noOfSeats;
+  }
+  next();
+});
+
+// Index for pickUp.location and dropOff.location fields
+RideSchema.index({
+  "pickUp.location": "2dsphere",
+  "dropOff.location": "2dsphere",
+});
+
 const RideDB: mongoose.Model<Ride, RideModel> = mongoose.model<Ride, RideModel>(
   "Ride",
   RideSchema
 );
-
 class RideDbModel extends IDb<Ride, RideModel> {
-  ride: RideModel;
-  constructor(ride: RideModel = null) {
+  constructor() {
     super(RideDB);
-    this.ride = ride;
   }
 }
 
