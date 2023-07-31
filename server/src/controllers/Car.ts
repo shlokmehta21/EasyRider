@@ -26,39 +26,84 @@ class Car implements IController {
 
   initializeRoutes(): void {
     this.router.use(this.path.default as string, CheckUserAuthentication);
+    this.router.get(this.path.default as string, this.getAllCarDetails);
     this.router.post(this.path.default as string, this.getCarDetails);
     this.router.post(this.path.register as string, this.register);
     this.router.delete(this.path.delete as string, this.delete);
   }
-  getCarDetails = async (req: Request, resp: Response): Promise<void> => {
-    const sessionId = req.cookies.sessionid as string;
-    const { id: userId }: SessionData = new UserSession().getSessionData(
-      sessionId
-    );
-    const { id }: { id: string } = req.body as { id: string };
-    if (!id) {
-      new ErrorController().handleError(
-        { code: 400, message: "Car ID is required" },
-        req,
-        resp
-      );
-    }
-    const db = new UserDbModel();
-    const car = await db.getModel().findOne(
-      { id: userId, "car.id": id },
-      {
-        id: 1,
-        car: 1,
+  getAllCarDetails = async (req: Request, resp: Response): Promise<void> => {
+    try {
+      const sessionId = req.cookies.sessionid as string;
+      const { id }: SessionData = new UserSession().getSessionData(sessionId);
+
+      if (!id) {
+        new ErrorController().handleError(
+          { code: 400, message: "Car ID is required" },
+          req,
+          resp
+        );
       }
-    );
-    if (car) {
-      resp.status(200).json(car);
-    } else {
-      new ErrorController().handleError(
-        { code: 400, message: "User Not Found" },
-        req,
-        resp
+      const db = new UserDbModel();
+      const car = await db.getModel().findOne(
+        { id },
+        {
+          _id: 0,
+          id: 1,
+          "car.id": 1,
+          "car.name": 1,
+          "car.model": 1,
+          "car.carType": 1,
+          "car.seatsAvailable": 1,
+        }
       );
+      if (car) {
+        resp.status(200).json(car);
+      } else {
+        new ErrorController().handleError(
+          { code: 400, message: "User Not Found" },
+          req,
+          resp
+        );
+      }
+    } catch (err) {
+      console.log(err);
+      new ErrorController().handleInternalServer(resp);
+    }
+  };
+
+  getCarDetails = async (req: Request, resp: Response): Promise<void> => {
+    try {
+      const sessionId = req.cookies.sessionid as string;
+      const { id: userId }: SessionData = new UserSession().getSessionData(
+        sessionId
+      );
+      const { id }: { id: string } = req.body as { id: string };
+      if (!id) {
+        new ErrorController().handleError(
+          { code: 400, message: "Car ID is required" },
+          req,
+          resp
+        );
+      }
+      const db = new UserDbModel();
+      const car = await db.getModel().findOne(
+        { id: userId, "car.id": id },
+        {
+          id: 1,
+          car: 1,
+        }
+      );
+      if (car) {
+        resp.status(200).json(car);
+      } else {
+        new ErrorController().handleError(
+          { code: 400, message: "User Not Found" },
+          req,
+          resp
+        );
+      }
+    } catch (err) {
+      new ErrorController().handleInternalServer(resp);
     }
   };
 
