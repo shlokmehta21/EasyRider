@@ -1,6 +1,7 @@
 # dependencies
 frontend/node_modules
 server/node_modules
+frontend/src/types/env.d.ts
 
 .DS_Store
 

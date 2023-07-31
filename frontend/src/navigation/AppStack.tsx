@@ -33,8 +33,8 @@ const TopTabsGroup = () => {
         },
       }}
     >
-      <TopTabs.Screen name="Feed" component={Home} />
-      <TopTabs.Screen name="Add a ride" component={AddRide} />
+      <TopTabs.Screen name="Rides" component={Home} />
+      <TopTabs.Screen name="Add ride" component={AddRide} />
     </TopTabs.Navigator>
   );
 };

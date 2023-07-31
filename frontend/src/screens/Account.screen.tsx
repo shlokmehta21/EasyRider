@@ -1,6 +1,7 @@
 import React, { useContext, useState } from "react";
 import {
   ActivityIndicator,
+  Button,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -19,9 +20,12 @@ import * as ImagePicker from "expo-image-picker";
 import AxiosInstance from "../Utils/AxiosConfig";
 import axios from "axios";
 import { UserContext } from "../context/UserContext";
-import { QueryClient, useMutation, useQuery } from "react-query";
+import { useMutation, useQuery } from "react-query";
 import { UserProfile } from "../types/UserProfile";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Feather } from "@expo/vector-icons";
+import { CustomImagePicker } from "../components/common/ImagePicker";
 
 const ValidationSchema = Yup.object().shape({
   DOB: Yup.date().required("Date of birth is Required"),
@@ -52,6 +56,7 @@ interface AccountProps {
 
 const Account: React.FC<AccountProps> = ({ navigation }) => {
   const { userStorage } = useContext(UserContext);
+  const [uploadLicense, setUploadLicense] = useState(false);
 
   const userId = userStorage?.user.id;
 
@@ -160,6 +165,7 @@ const Account: React.FC<AccountProps> = ({ navigation }) => {
             EndDate: "",
             ProfilePic: {},
             StudentID: {} || null,
+            licenseNumber: "",
             License: {},
           }}
           // validationSchema={ValidationSchema}
@@ -172,7 +178,12 @@ const Account: React.FC<AccountProps> = ({ navigation }) => {
               email: values.Email,
               dob: new Date(values.DOB).getTime(),
               phoneNumber: String(values.Phone),
+              license: {
+                number: String(values.licenseNumber),
+                images: values.License ? [values.License as Buffer] : [{}],
+              },
             };
+
             mutate(data);
 
             if (isSuccess) resetForm();
@@ -187,8 +198,14 @@ const Account: React.FC<AccountProps> = ({ navigation }) => {
             setFieldValue,
           }) => (
             <View style={styles.container}>
-              <Pressable onPress={() => pickImage(setFieldValue)}>
+              <Pressable
+                style={styles.profilePictureContainer}
+                onPress={() => pickImage(setFieldValue)}
+              >
                 <Image source={image} style={styles.profilePicture} />
+                <View style={styles.editIcon}>
+                  <MaterialCommunityIcons name="pencil" size={24} />
+                </View>
               </Pressable>
               <CustomInput
                 placeholder="First Name"
@@ -196,18 +213,14 @@ const Account: React.FC<AccountProps> = ({ navigation }) => {
                 value={values.FirstName}
                 onTextChange={handleChange("FirstName")}
               />
-              {/* {touched.FirstName && errors.FirstName && (
-                <Text style={styles.errorMsg}>{errors.FirstName}</Text>
-              )} */}
+
               <CustomInput
                 placeholder="Last Name"
                 secureTextEntry={false}
                 value={values.LastName}
                 onTextChange={handleChange("LastName")}
               />
-              {/* {touched.LastName && errors.LastName && (
-                <Text style={styles.errorMsg}>{errors.LastName}</Text>
-              )} */}
+
               <CustomInput
                 placeholder="Email"
                 secureTextEntry={false}
@@ -215,18 +228,13 @@ const Account: React.FC<AccountProps> = ({ navigation }) => {
                 value={values.Email}
                 onTextChange={handleChange("Email")}
               />
-              {/* {touched.Email && errors.Email && (
-                <Text style={styles.errorMsg}>{errors.Email}</Text>
-              )} */}
+
               <CustomDatePicker
                 fieldName="DOB"
                 value={values.DOB}
                 title="Date of Birth"
                 setFieldValue={setFieldValue}
               />
-              {touched.DOB && errors.DOB && (
-                <Text style={styles.errorMsg}>{errors.DOB}</Text>
-              )}
 
               <CustomInput
                 placeholder="Phone Number"
@@ -236,9 +244,72 @@ const Account: React.FC<AccountProps> = ({ navigation }) => {
                 maxLength={10}
                 onTextChange={handleChange("Phone")}
               />
-              {/* {touched.Phone && errors.Phone && (
-                <Text style={styles.errorMsg}>{errors.Phone}</Text>
-              )} */}
+
+              {data?.licence ? (
+                <CustomImagePicker
+                  title="Update License (G2/G)"
+                  setFieldValue={setFieldValue}
+                  fieldName="License"
+                />
+              ) : (
+                <>
+                  {uploadLicense ? (
+                    <>
+                      <CustomInput
+                        placeholder="Enter License Number"
+                        secureTextEntry={false}
+                        value={values.licenseNumber}
+                        keyboardType="number-pad"
+                        onTextChange={handleChange("licenseNumber")}
+                      />
+
+                      <CustomImagePicker
+                        title="Upload License (G2/G)"
+                        setFieldValue={setFieldValue}
+                        fieldName="License"
+                      />
+                    </>
+                  ) : (
+                    <View style={styles.licenseWarningContainer}>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
+                        <Feather name="info" size={24} color="#5068ff" />
+                        <Text
+                          style={{
+                            fontWeight: "bold",
+                            color: "#6d80fc",
+                            marginLeft: 3,
+                          }}
+                        >
+                          You haven't uploaded the license yet!
+                        </Text>
+                      </View>
+                      {/* <Text
+                        style={{
+                          fontWeight: "500",
+                          color: "#788aff",
+                          marginTop: 10,
+                          maxWidth: "92%",
+                          marginBottom: 5,
+                        }}
+                      >
+                        If you wish to provide ride on EasyRider please upload
+                        your license.
+                      </Text> */}
+
+                      <Button
+                        title="Upload"
+                        onPress={() => setUploadLicense(true)}
+                      />
+                    </View>
+                  )}
+                </>
+              )}
 
               <CustomButton
                 title="Update"
@@ -261,7 +332,7 @@ export default Account;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginTop: 10,
+    marginTop: 5,
     width: "100%",
     justifyContent: "center",
     alignItems: "center",
@@ -290,12 +361,38 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 10,
   },
-  profilePicture: {
-    height: 150,
-    width: 150,
+  profilePictureContainer: {
+    height: 100,
+    width: 100,
     borderRadius: 100,
     borderColor: "#e0e0e0",
     borderWidth: 1,
     marginVertical: 20,
+  },
+  profilePicture: {
+    height: 100,
+    width: 100,
+    borderRadius: 100,
+  },
+  editIcon: {
+    backgroundColor: "#fafafa",
+    borderRadius: 100,
+    padding: 3,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    position: "absolute",
+    right: 0,
+    bottom: 0,
+  },
+  licenseWarningContainer: {
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#acb7ff",
+    backgroundColor: "#f2f4ff",
+    borderRadius: 5,
+    padding: 10,
+    flexDirection: "column",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
 });

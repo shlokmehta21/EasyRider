@@ -13,6 +13,8 @@ import * as Location from "expo-location";
 import MapView from "react-native-maps";
 import device from "../constants/device";
 import BottomSheet from "@gorhom/bottom-sheet";
+import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";
+import { REACT_APP_GOOGLE_API_KEY } from "@env";
 
 interface HomeProps {}
 
@@ -70,17 +72,26 @@ const Home: FC<HomeProps> = ({}) => {
         <>
           {/* Search */}
           <View style={styles.searchContainer}>
-            <TextInput
+            {/* <TextInput
               placeholder="Where to?"
               style={styles.search}
               placeholderTextColor="#000"
+            /> */}
+            <GooglePlacesAutocomplete
+              GooglePlacesDetailsQuery={{ fields: "geometry" }}
+              fetchDetails={true} // you need this to fetch the details object onPress
+              placeholder="Where to?"
+              query={{
+                key: REACT_APP_GOOGLE_API_KEY,
+                language: "en",
+              }}
+              onPress={(data, details = null) => {
+                console.log(JSON.stringify(details?.geometry?.location));
+                handlePresentModalPress();
+              }}
+              onFail={(error) => console.log(error)}
+              onNotFound={() => console.log("no results")}
             />
-            <TouchableOpacity
-              style={styles.searchBtn}
-              onPress={handlePresentModalPress}
-            >
-              <FontAwesome name="search" size={20} color="white" />
-            </TouchableOpacity>
           </View>
 
           <MapView

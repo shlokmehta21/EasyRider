@@ -3,6 +3,8 @@ import { AxiosResponse } from "axios";
 export function getSessionId(headers: AxiosResponse["headers"]): string {
   try {
     const cookies = headers["set-cookie"];
+    console.log(cookies, "cookies");
+
     if (cookies) {
       const sessionIdCookie = cookies.find((cookie: string) =>
         cookie.includes("sessionid=")
