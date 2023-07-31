@@ -25,7 +25,7 @@ class Ride implements IController {
   initializeRoutes(): void {
     this.router.use(this.path.default as string, CheckUserAuthentication);
 
-    this.router.get(this.path.default as string, this.findAllRides);
+    this.router.post(this.path.default as string, this.findAllRides);
 
     this.router.get(this.path.rideDetails as string, this.getRideDetails);
     this.router.post(this.path.add as string, this.add);
@@ -53,7 +53,6 @@ class Ride implements IController {
           location: ILocation;
           time: Date;
         };
-        pickUpDate?: Date;
         seatsRequired?: number;
         pageIndex: number;
         itemsPerPage: number;
@@ -65,34 +64,48 @@ class Ride implements IController {
       let matchFilter: any = { isAvailable: true };
 
       if (pickUp.time) {
-        matchFilter.pickUp = { time: pickUp.time };
+        matchFilter["pickUp.time"] = { $gte: pickUp.time };
+      }
+      if (dropOff.time) {
+        matchFilter["dropOff.time"] = { $lte: dropOff.time };
+      }
+      if (seatsRequired) {
+        matchFilter.seatsLeft = { $gte: seatsRequired };
       }
 
+      const aggregationPipeline: any[] = [];
+
+      // Add $geoNear stage for pickUp location
+      matchFilter["pickUp.location"] = {
+        $geoWithin: {
+          $centerSphere: [
+            pickUp.location.coordinates.reverse(),
+            25000 / 6371000,
+          ], // 25000 meters in radians
+        },
+      };
+
+      // Add the $match stage to filter dropOff location
       if (
         dropOff.location &&
         dropOff.location.coordinates &&
         dropOff.location.coordinates.length === 2
       ) {
-        // matchFilter["dropOff.lat"] = dropOff.lat;
-        // matchFilter["dropOff.long"] = dropOff.long;
-      }
-
-      if (dropOff.time) {
-        matchFilter.dropOff = { time: dropOff.time };
-      }
-
-      const aggregationPipeline: any[] = [
-        { $match: matchFilter },
-        {
-          $geoNear: {
-            near: { type: "Point", coordinates: pickUp.location.coordinates },
-            distanceField: "distance",
-            maxDistance: 25000, // distance in meters (25 km)
-            spherical: true,
+        matchFilter["dropOff.location"] = {
+          $geoWithin: {
+            $centerSphere: [
+              dropOff.location.coordinates.reverse(),
+              5000 / 6371000,
+            ], // 5000 meters in radians
           },
-        },
-        { $sort: { createdAt: -1 } },
-      ];
+        };
+      }
+
+      // Add the rest of the stages
+      aggregationPipeline.push(
+        { $match: matchFilter },
+        { $sort: { updatedAt: -1 } }
+      );
 
       if (total > 0) {
         aggregationPipeline.push(
@@ -110,7 +123,24 @@ class Ride implements IController {
           },
         });
       }
-
+      aggregationPipeline.push({
+        $project: {
+          data: {
+            userId: 1,
+            carId: 1,
+            noOfSeats: 1,
+            seatsLeft: 1,
+            "pickUp.location.coordinates": 1,
+            "dropOff.location.coordinates": 1,
+            "pickUp.time": 1,
+            "dropOff.time": 1,
+            id: 1,
+            createdAt: 1,
+            updatedAt: 1,
+          },
+          totalCount: 1,
+        },
+      });
       const result = await db.getModel().aggregate(aggregationPipeline);
 
       if (total > 0) {
