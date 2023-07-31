@@ -342,7 +342,6 @@ class UserProfile implements IController {
         email: 1,
         dob: 1,
         locale: 1,
-        "license.number": 1,
         phoneNumber: 1,
         domain: {
           id: 1,
