@@ -138,7 +138,9 @@ class UserProfile implements IController {
     const session = new UserSession();
     const { id, email }: SessionData = session.getSessionData(sessionid);
 
-    const updateData: any = {};
+    const updateData: any = {
+      license: {},
+    };
     // firstName validation
     const { firstName } = user;
     if (firstName) {
@@ -198,10 +200,14 @@ class UserProfile implements IController {
     if (license && Object.keys(license).length > 0) {
       if (!license.number) {
         error.licenseNo = "License is required";
-      } else updateData.license.number = license.number;
+      } else {
+        updateData.license.number = license.number;
+      }
       if (!license.images || license.images.length < 1) {
         error.licenseImage = "License Image is required";
-      } else updateData.license.images = license.images;
+      } else {
+        updateData.license.images = license.images;
+      }
     }
 
     // domain validation
