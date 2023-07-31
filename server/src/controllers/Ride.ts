@@ -29,7 +29,7 @@ class Ride implements IController {
 
     this.router.get(this.path.rideDetails as string, this.getRideDetails);
     this.router.post(this.path.add as string, this.add);
-    this.router.put(this.path.update as string, this.update);
+    this.router.put(this.path.default as string, this.update);
     this.router.delete(this.path.delete as string, this.delete);
     this.router.post(this.path.book as string, this.book);
     this.router.post(this.path.cancel as string, this.cancel);
@@ -48,26 +48,84 @@ class Ride implements IController {
         pickUp: {
           location: ILocation;
           time: Date;
+          filter: string;
         };
         dropOff: {
           location: ILocation;
           time: Date;
+          filter: string;
         };
         seatsRequired?: number;
         pageIndex: number;
         itemsPerPage: number;
         total: number;
       } = req.body;
+      const error: { [key: string]: string } = {};
+
+      if (typeof pageIndex !== "number" || pageIndex < 0) {
+        error.pageIndex = "Page Index must be a number";
+      }
+      if (
+        seatsRequired &&
+        (typeof seatsRequired !== "number" || seatsRequired < 0)
+      ) {
+        error.pageIndex = "Seats Required must be valid";
+      }
+
+      if (
+        !pickUp ||
+        typeof pickUp !== "object" ||
+        typeof pickUp.location !== "object" ||
+        typeof pickUp.location.coordinates !== "object" ||
+        pickUp.location.coordinates.length !== 2 ||
+        typeof pickUp.location.coordinates[0] !== "number" ||
+        typeof pickUp.location.coordinates[1] !== "number"
+      ) {
+        error.pickUp = "Invalid Pickup Location";
+      } else if (pickUp.time && !validDateChecker(pickUp.time)) {
+        error.pickUpTime = "Invalid Pickup Time";
+      }
+      if (
+        !dropOff ||
+        typeof dropOff !== "object" ||
+        typeof dropOff.location !== "object" ||
+        typeof dropOff.location.coordinates !== "object" ||
+        dropOff.location.coordinates.length !== 2 ||
+        typeof dropOff.location.coordinates[0] !== "number" ||
+        typeof dropOff.location.coordinates[1] !== "number"
+      ) {
+        error.dropOff = "Invalid Dropoff Location";
+      } else if (dropOff.time && !validDateChecker(dropOff.time)) {
+        error.dropOffTime = "Invalid Dropoff Time";
+      }
+      if (Object.keys(error).length > 0) {
+        new ErrorController().handleError(
+          { code: 400, customMessage: error },
+          req,
+          resp
+        );
+        return;
+      }
 
       const db = new RideDbModel();
 
       let matchFilter: any = { isAvailable: true };
 
       if (pickUp.time) {
-        matchFilter["pickUp.time"] = { $gte: pickUp.time };
+        const time = new Date(pickUp.time);
+        if (pickUp.filter === "lte") {
+          matchFilter["pickUp.time"] = { $lte: time };
+        } else {
+          matchFilter["pickUp.time"] = { $gte: time };
+        }
       }
       if (dropOff.time) {
-        matchFilter["dropOff.time"] = { $lte: dropOff.time };
+        const time = new Date(pickUp.time);
+        if (pickUp.filter === "lte") {
+          matchFilter["dropOff.time"] = { $lte: time };
+        } else {
+          matchFilter["dropOff.time"] = { $gte: time };
+        }
       }
       if (seatsRequired) {
         matchFilter.seatsLeft = { $gte: seatsRequired };
@@ -126,17 +184,12 @@ class Ride implements IController {
       aggregationPipeline.push({
         $project: {
           data: {
-            userId: 1,
-            carId: 1,
-            noOfSeats: 1,
             seatsLeft: 1,
             "pickUp.location.coordinates": 1,
             "dropOff.location.coordinates": 1,
             "pickUp.time": 1,
             "dropOff.time": 1,
             id: 1,
-            createdAt: 1,
-            updatedAt: 1,
           },
           totalCount: 1,
         },
@@ -166,7 +219,22 @@ class Ride implements IController {
       }
 
       const db = new RideDbModel();
-      const ride = await db.findOneByParams({ id });
+      const ride = await db.getModel().findOne(
+        { id },
+        {
+          userId: 1,
+          carId: 1,
+          noOfSeats: 1,
+          seatsLeft: 1,
+          "pickUp.location.coordinates": 1,
+          "dropOff.location.coordinates": 1,
+          "pickUp.time": 1,
+          "dropOff.time": 1,
+          id: 1,
+          _id: 0,
+          updatedAt: 1,
+        }
+      );
 
       if (ride) {
         resp.status(200).json(ride);
@@ -219,8 +287,10 @@ class Ride implements IController {
 
   update = async (req: Request, resp: Response): Promise<void> => {
     const sessionId: string = req.cookies.sessionid as string;
-    const { id }: SessionData = new UserSession().getSessionData(sessionId);
-    if (!id) {
+    const { id: userId }: SessionData = new UserSession().getSessionData(
+      sessionId
+    );
+    if (!userId) {
       new ErrorController().handleError(
         { code: 401, message: "UnAuthorized Request" },
         req,
@@ -228,34 +298,45 @@ class Ride implements IController {
       );
       return;
     }
-    const rideData: RideModel = req.body;
-    const error: { [key: string]: string } = this.rideInputValidation(rideData);
-
-    if (Object.keys(error).length > 0) {
-      new ErrorController().handleError(
-        { code: 400, customMessage: error },
-        req,
-        resp
-      );
-      return;
-    }
 
     try {
-      const db = new RideDbModel();
-      const isValid = await db.findByParamsAndUpdate(
-        { id: rideData.id },
-        rideData
-      );
+      const rideData: RideModel = req.body;
+      const error: { [key: string]: string } =
+        this.rideUpdateValidation(rideData);
 
-      if (!isValid) {
+      if (Object.keys(error).length > 0) {
         new ErrorController().handleError(
-          { code: 400, message: "Unable to find the ride to update" },
+          { code: 400, customMessage: error },
           req,
           resp
         );
-      } else {
-        resp.status(200).json(true);
+        return;
       }
+      const db = new RideDbModel();
+      db.findIfExists({ id: rideData.id }).then(async (valid: boolean) => {
+        if (!valid) {
+          new ErrorController().handleError(
+            { code: 400, message: "Invalid Ride ID" },
+            req,
+            resp
+          );
+          return;
+        }
+        const isValid = await db.findByParamsAndUpdate(
+          { id: rideData.id },
+          rideData
+        );
+
+        if (!isValid) {
+          new ErrorController().handleError(
+            { code: 400, message: "Unable to update the ride" },
+            req,
+            resp
+          );
+        } else {
+          resp.status(200).json(true);
+        }
+      });
     } catch (error) {
       console.error("An error occurred while updating the ride:", error);
       new ErrorController().handleInternalServer(resp);
@@ -277,7 +358,7 @@ class Ride implements IController {
     try {
       // Find and delete the ride
       const db = new RideDbModel();
-      const deletedRide = await db.getModel().findByIdAndDelete({ id });
+      const deletedRide = await db.getModel().findOneAndDelete({ id });
 
       if (!deletedRide) {
         new ErrorController().handleNotFoundError(resp, "Ride not found");
@@ -383,6 +464,79 @@ class Ride implements IController {
     ) {
       error.dropOff = "Invalid Dropoff Location";
     } else if (!validDateChecker(rideData.dropOff.time)) {
+      error.dropOffTime = "Invalid Dropoff Time";
+    }
+    return error;
+  }
+
+  rideUpdateValidation(rideData: RideModel): { [key: string]: string } {
+    const error: { [key: string]: string } = {};
+
+    // Validate rideData
+    if (!rideData.id || typeof rideData.id !== "string") {
+      error.id = "Invalid Ride ID";
+    }
+    if (rideData.carId && typeof rideData.carId !== "string") {
+      error.carId = "Invalid Car ID";
+    } else {
+      const db = new UserDbModel();
+      db.findOneByParams({ "car.id": rideData.carId })
+        .then((user: User | null) => {
+          if (!user) {
+            error.carId = "Invalid Car ID";
+          } else {
+            if (
+              typeof rideData.noOfSeats !== "number" ||
+              rideData.noOfSeats <= 0 ||
+              !Number.isInteger(rideData.noOfSeats)
+            ) {
+              error.noOfSeats = "Invalid Number of Seats";
+            } else if (
+              rideData.noOfSeats > (user.car?.seatsAvailable as number)
+            ) {
+              error.noOfSeats = `No. of Seats cannot be greater than ${user.car?.seatsAvailable}`;
+            }
+          }
+        })
+        .catch((err) => {
+          error.errors = "Internal server error occurred";
+          return;
+        });
+    }
+
+    if (
+      rideData.pickUp &&
+      (typeof rideData.pickUp !== "object" ||
+        typeof rideData.pickUp.location !== "object" ||
+        typeof rideData.pickUp.location.coordinates !== "object" ||
+        rideData.pickUp.location.coordinates.length !== 2 ||
+        typeof rideData.pickUp.location.coordinates[0] !== "number" ||
+        typeof rideData.pickUp.location.coordinates[1] !== "number")
+    ) {
+      error.pickUp = "Invalid Pickup Location";
+    } else if (
+      rideData.pickUp &&
+      rideData.pickUp.time &&
+      !validDateChecker(rideData.pickUp.time)
+    ) {
+      error.pickUpTime = "Invalid Pickup Time";
+    }
+
+    if (
+      rideData.dropOff &&
+      (typeof rideData.dropOff !== "object" ||
+        typeof rideData.dropOff.location !== "object" ||
+        typeof rideData.dropOff.location.coordinates !== "object" ||
+        rideData.dropOff.location.coordinates.length !== 2 ||
+        typeof rideData.dropOff.location.coordinates[0] !== "number" ||
+        typeof rideData.dropOff.location.coordinates[1] !== "number")
+    ) {
+      error.dropOff = "Invalid Dropoff Location";
+    } else if (
+      rideData.dropOff &&
+      rideData.dropOff.time &&
+      !validDateChecker(rideData.dropOff.time)
+    ) {
       error.dropOffTime = "Invalid Dropoff Time";
     }
     return error;
