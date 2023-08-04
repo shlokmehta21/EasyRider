@@ -165,7 +165,7 @@ const Account: React.FC<AccountProps> = ({ navigation }) => {
             EndDate: "",
             ProfilePic: {},
             StudentID: {} || null,
-            licenseNumber: "",
+            licenseNumber: isLoading ? "" : data.license?.number,
             License: {},
           }}
           // validationSchema={ValidationSchema}
@@ -245,12 +245,22 @@ const Account: React.FC<AccountProps> = ({ navigation }) => {
                 onTextChange={handleChange("Phone")}
               />
 
-              {data?.licence ? (
-                <CustomImagePicker
-                  title="Update License (G2/G)"
-                  setFieldValue={setFieldValue}
-                  fieldName="License"
-                />
+              {data?.licence !== null ? (
+                <>
+                  <CustomInput
+                    placeholder="Enter License Number"
+                    secureTextEntry={false}
+                    value={values.licenseNumber}
+                    keyboardType="number-pad"
+                    onTextChange={handleChange("licenseNumber")}
+                  />
+
+                  <CustomImagePicker
+                    title="Update License (G2/G)"
+                    setFieldValue={setFieldValue}
+                    fieldName="License"
+                  />
+                </>
               ) : (
                 <>
                   {uploadLicense ? (

@@ -117,6 +117,7 @@ const Login: React.FC<LoginProps> = ({ navigation }) => {
       return data;
     } catch (error) {
       console.log(error);
+
       if (axios.isAxiosError(error)) {
         if (error.response) {
           console.log(error.response.data);

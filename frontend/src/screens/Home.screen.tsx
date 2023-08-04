@@ -15,6 +15,7 @@ import device from "../constants/device";
 import BottomSheet from "@gorhom/bottom-sheet";
 import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";
 import { REACT_APP_GOOGLE_API_KEY } from "@env";
+import PlacesAutoComplete from "../components/common/PlacesAutoComplete";
 
 interface HomeProps {}
 
@@ -71,28 +72,13 @@ const Home: FC<HomeProps> = ({}) => {
       {showMap && (
         <>
           {/* Search */}
-          <View style={styles.searchContainer}>
-            {/* <TextInput
-              placeholder="Where to?"
-              style={styles.search}
-              placeholderTextColor="#000"
-            /> */}
-            <GooglePlacesAutocomplete
-              GooglePlacesDetailsQuery={{ fields: "geometry" }}
-              fetchDetails={true} // you need this to fetch the details object onPress
-              placeholder="Where to?"
-              query={{
-                key: REACT_APP_GOOGLE_API_KEY,
-                language: "en",
-              }}
-              onPress={(data, details = null) => {
-                console.log(JSON.stringify(details?.geometry?.location));
-                handlePresentModalPress();
-              }}
-              onFail={(error) => console.log(error)}
-              onNotFound={() => console.log("no results")}
-            />
-          </View>
+          <PlacesAutoComplete
+            onPress={handlePresentModalPress}
+            borderColor="#ffffff"
+            height={60}
+            title="Where to?"
+            paddingHorizontal={10}
+          />
 
           <MapView
             followsUserLocation

@@ -17,6 +17,7 @@ type CustomDatePickerProps = {
   value: string;
   title: string;
   setFieldValue: (valueString: string, dateString: string | undefined) => void;
+  mode?: "date" | "time" | "datetime" | undefined;
 };
 
 const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
@@ -24,6 +25,7 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   title,
   setFieldValue,
   fieldName,
+  mode,
 }) => {
   const [date, setDate] = useState<Date>(new Date());
   const [show, setShow] = useState(false);
@@ -52,8 +54,7 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
             testID="dateTimePicker"
             display="spinner"
             value={value !== "" ? new Date(value) : date}
-            mode={"date"}
-            is24Hour={true}
+            mode={mode ? "datetime" : "date"}
             onChange={(
               event: DateTimePickerEvent,
               selectedDate?: Date | undefined
