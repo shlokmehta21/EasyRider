@@ -78,6 +78,8 @@ const Home: FC<HomeProps> = ({}) => {
             height={60}
             title="Where to?"
             paddingHorizontal={10}
+            margintop={15}
+            fontweight="bold"
           />
 
           <MapView

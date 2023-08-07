@@ -3,6 +3,7 @@ import { FC, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Platform,
   StyleSheet,
   Text,
   View,
@@ -77,122 +78,118 @@ const AddRide: FC<AddRideProps> = ({}) => {
     );
 
   return (
-    <KeyboardAvoidingView>
-      <ScrollView
+    <KeyboardAvoidingView
+      style={{ flex: 1, flexDirection: "column", alignContent: "flex-start" }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={90}
+    >
+      {/* <ScrollView
         horizontal={false}
         showsHorizontalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+      > */}
+      <Formik
+        initialValues={{
+          seatsAvailable: "",
+          PickUpTime: "",
+          DropTime: "",
+        }}
+        // validationSchema={ValidationSchema}
+        onSubmit={(values, { resetForm }) => {
+          const rideObj = {
+            carId: data.id,
+            noOfSeats: values.seatsAvailable,
+            pickUp: {
+              location: {
+                coordinates: pickUpLocation,
+              },
+              time: new Date(values.PickUpTime),
+            },
+            dropOff: {
+              location: {
+                coordinates: dropLocation,
+              },
+              time: new Date(values.DropTime),
+            },
+          };
+
+          mutate(rideObj);
+
+          if (isSuccess === true) {
+            resetForm();
+          }
+        }}
       >
-        <Formik
-          initialValues={{
-            seatsAvailable: "",
-            PickUpTime: "",
-            DropTime: "",
-          }}
-          // validationSchema={ValidationSchema}
-          onSubmit={(values, { resetForm }) => {
-            const rideObj = {
-              carId: data.id,
-              noOfSeats: values.seatsAvailable,
-              pickUp: {
-                location: {
-                  coordinates: pickUpLocation,
-                },
-                time: new Date(values.PickUpTime),
-              },
-              dropOff: {
-                location: {
-                  coordinates: dropLocation,
-                },
-                time: new Date(values.DropTime),
-              },
-            };
+        {({
+          values,
+          errors,
+          touched,
+          handleChange,
+          handleSubmit,
+          setFieldValue,
+        }) => (
+          <View style={styles.container}>
+            <Text style={styles.title}>Add Ride</Text>
+            <PlacesAutoComplete
+              setStateLocation={setPickUpLocation}
+              title="Pick Up Location"
+              borderColor="#eaeaea"
+              backgroundColor="#F9FBFC"
+            />
 
-            mutate(rideObj);
+            <CustomDatePicker
+              fieldName="PickUpTime"
+              value={values.PickUpTime}
+              title="Pick Up Time"
+              mode="datetime"
+              setFieldValue={setFieldValue}
+            />
+            {touched.PickUpTime && errors.PickUpTime && (
+              <Text style={styles.errorMsg}>{errors.PickUpTime}</Text>
+            )}
 
-            if (isSuccess === true) {
-              resetForm();
-            }
-          }}
-        >
-          {({
-            values,
-            errors,
-            touched,
-            handleChange,
-            handleSubmit,
-            setFieldValue,
-          }) => (
-            <View style={styles.container}>
-              <Text style={styles.title}>Add Ride</Text>
+            <PlacesAutoComplete
+              setStateLocation={setDropLocation}
+              title="Drop Location"
+              borderColor="#eaeaea"
+              margintop={3}
+              backgroundColor="#F9FBFC"
+            />
 
-              <View style={{ width: "100%" }}>
-                <ScrollView horizontal={true} style={{ minWidth: "100%" }}>
-                  <PlacesAutoComplete
-                    setStateLocation={setPickUpLocation}
-                    title="Pick Up Location"
-                    borderColor="#eaeaea"
-                    backgroundColor="#F9FBFC"
-                  />
-                </ScrollView>
-              </View>
+            <CustomDatePicker
+              fieldName="DropTime"
+              value={values.DropTime}
+              title="Drop Time"
+              mode="datetime"
+              setFieldValue={setFieldValue}
+            />
+            {touched.DropTime && errors.DropTime && (
+              <Text style={styles.errorMsg}>{errors.DropTime}</Text>
+            )}
 
-              <CustomDatePicker
-                fieldName="PickUpTime"
-                value={values.PickUpTime}
-                title="Pick Up Time"
-                mode="datetime"
-                setFieldValue={setFieldValue}
-              />
-              {touched.PickUpTime && errors.PickUpTime && (
-                <Text style={styles.errorMsg}>{errors.PickUpTime}</Text>
-              )}
+            <CustomInput
+              placeholder="Seats Available"
+              secureTextEntry={false}
+              value={values.seatsAvailable}
+              keyboardType="number-pad"
+              onTextChange={handleChange("seatsAvailable")}
+            />
+            {touched.seatsAvailable && errors.seatsAvailable && (
+              <Text style={styles.errorMsg}>{errors.seatsAvailable}</Text>
+            )}
 
-              <View style={{ width: "100%" }}>
-                <ScrollView style={{ minWidth: "100%" }}>
-                  <PlacesAutoComplete
-                    setStateLocation={setDropLocation}
-                    title="Drop Location"
-                    borderColor="#eaeaea"
-                    backgroundColor="#F9FBFC"
-                  />
-                </ScrollView>
-              </View>
-
-              <CustomDatePicker
-                fieldName="DropTime"
-                value={values.DropTime}
-                title="Drop Time"
-                mode="datetime"
-                setFieldValue={setFieldValue}
-              />
-              {touched.DropTime && errors.DropTime && (
-                <Text style={styles.errorMsg}>{errors.DropTime}</Text>
-              )}
-
-              <CustomInput
-                placeholder="Seats Available"
-                secureTextEntry={false}
-                value={values.seatsAvailable}
-                keyboardType="number-pad"
-                onTextChange={handleChange("seatsAvailable")}
-              />
-              {touched.seatsAvailable && errors.seatsAvailable && (
-                <Text style={styles.errorMsg}>{errors.seatsAvailable}</Text>
-              )}
-
-              <CustomButton
-                title="Submit"
-                children={isUpdating ? <ActivityIndicator /> : null}
-                onPress={handleSubmit}
-                backGroundColor="black"
-                color="white"
-                diabled={isUpdating ? true : false}
-              />
-            </View>
-          )}
-        </Formik>
-      </ScrollView>
+            <CustomButton
+              title="Submit"
+              children={isUpdating ? <ActivityIndicator /> : null}
+              onPress={handleSubmit}
+              backGroundColor="black"
+              color="white"
+              diabled={isUpdating ? true : false}
+            />
+          </View>
+        )}
+      </Formik>
+      {/* </ScrollView> */}
     </KeyboardAvoidingView>
   );
 };
@@ -201,8 +198,6 @@ export default AddRide;
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    marginTop: 5,
     width: "100%",
     justifyContent: "center",
     alignItems: "center",

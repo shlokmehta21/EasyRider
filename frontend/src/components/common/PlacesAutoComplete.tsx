@@ -2,7 +2,7 @@ import React, { FC } from "react";
 import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";
 import { REACT_APP_GOOGLE_API_KEY } from "@env";
 import { Platform, StyleSheet, View } from "react-native";
-import { set } from "react-native-reanimated";
+import { color, set } from "react-native-reanimated";
 
 interface PlacesAutoCompleteProps {
   onPress?: () => void;
@@ -14,6 +14,8 @@ interface PlacesAutoCompleteProps {
   setStateLocation?: React.Dispatch<
     React.SetStateAction<[lat?: number, lon?: number]>
   >;
+  margintop?: number;
+  fontweight?: string;
 }
 
 const PlacesAutoComplete: FC<PlacesAutoCompleteProps> = ({
@@ -24,10 +26,16 @@ const PlacesAutoComplete: FC<PlacesAutoCompleteProps> = ({
   paddingHorizontal,
   backgroundColor,
   setStateLocation,
+  margintop,
+  fontweight,
 }) => {
   return (
     <View
-      style={[styles.searchContainer, { paddingHorizontal: paddingHorizontal }]}
+      style={[
+        styles.searchContainer,
+        { paddingHorizontal: paddingHorizontal },
+        { marginTop: margintop },
+      ]}
     >
       <GooglePlacesAutocomplete
         styles={{
@@ -37,17 +45,19 @@ const PlacesAutoComplete: FC<PlacesAutoCompleteProps> = ({
             backgroundColor: backgroundColor ? backgroundColor : "#ffffff",
             borderColor: borderColor,
             borderWidth: 1,
-            color: "#5d5d5d",
-            fontWeight: "700",
             borderRadius: 5,
+            fontWeight: fontweight ? fontweight : "600",
+            fontSize: 14,
             height: height ? height : 50,
-            // paddingVertical: Platform.OS === "ios" ? 20 : 15,
-            // paddingHorizontal: 15,
             marginBottom: 15,
           },
         }}
+        isRowScrollable={true}
         GooglePlacesDetailsQuery={{ fields: "geometry" }}
-        fetchDetails={true} // you need this to fetch the details object onPress
+        fetchDetails={true}
+        textInputProps={{
+          placeholderTextColor: "#7d7d7d",
+        }}
         placeholder={title ? title : "Search"}
         query={{
           key: REACT_APP_GOOGLE_API_KEY,
