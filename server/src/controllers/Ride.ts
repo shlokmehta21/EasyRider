@@ -138,7 +138,7 @@ class Ride implements IController {
         $geoWithin: {
           $centerSphere: [
             pickUp.location.coordinates.reverse(),
-            25000 / 6371000,
+            250000 / 6371000,
           ], // 25000 meters in radians
         },
       };
@@ -153,7 +153,7 @@ class Ride implements IController {
           $geoWithin: {
             $centerSphere: [
               dropOff.location.coordinates.reverse(),
-              5000 / 6371000,
+              250000 / 6371000,
             ], // 5000 meters in radians
           },
         };
@@ -194,7 +194,9 @@ class Ride implements IController {
           totalCount: 1,
         },
       });
+
       const result = await db.getModel().aggregate(aggregationPipeline);
+      console.log(result);
 
       if (total > 0) {
         const { data } = result[0];
