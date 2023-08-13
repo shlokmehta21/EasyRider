@@ -44,6 +44,10 @@ const RideSchema = new mongoose.Schema({
         type: [Number],
         required: true,
       },
+      name: {
+        type: String,
+        required: true,
+      },
     },
     time: {
       type: Date,
@@ -59,6 +63,10 @@ const RideSchema = new mongoose.Schema({
       },
       coordinates: {
         type: [Number],
+        required: true,
+      },
+      name: {
+        type: String,
         required: true,
       },
     },

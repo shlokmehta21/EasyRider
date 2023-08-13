@@ -32,6 +32,10 @@ const routes: RouteConfig = {
     domainImages: "/user/domain-images",
     updateLocale: "/user/locale",
   },
+  MESSAGE: {
+    default: "/chat",
+    unread: "/unread",
+  },
 };
 
 export default routes;

@@ -136,10 +136,7 @@ class Ride implements IController {
       // Add $geoNear stage for pickUp location
       matchFilter["pickUp.location"] = {
         $geoWithin: {
-          $centerSphere: [
-            pickUp.location.coordinates.reverse(),
-            250000 / 6371000,
-          ], // 25000 meters in radians
+          $centerSphere: [pickUp.location.coordinates, 250000 / 6371000], // 25000 meters in radians
         },
       };
 
@@ -151,10 +148,7 @@ class Ride implements IController {
       ) {
         matchFilter["dropOff.location"] = {
           $geoWithin: {
-            $centerSphere: [
-              dropOff.location.coordinates.reverse(),
-              250000 / 6371000,
-            ], // 5000 meters in radians
+            $centerSphere: [dropOff.location.coordinates, 250000 / 6371000], // 5000 meters in radians
           },
         };
       }
@@ -453,6 +447,8 @@ class Ride implements IController {
       error.pickUp = "Invalid Pickup Location";
     } else if (!validDateChecker(rideData.pickUp.time)) {
       error.pickUpTime = "Invalid Pickup Time";
+    } else if (!rideData.pickUp.location.name) {
+      error.pickUpLocName = "Invalid Pickup Location";
     }
 
     if (
@@ -467,6 +463,8 @@ class Ride implements IController {
       error.dropOff = "Invalid Dropoff Location";
     } else if (!validDateChecker(rideData.dropOff.time)) {
       error.dropOffTime = "Invalid Dropoff Time";
+    } else if (!rideData.dropOff.location.name) {
+      error.dropOffLocName = "Invalid Dropoff Location";
     }
     return error;
   }
@@ -522,6 +520,12 @@ class Ride implements IController {
       !validDateChecker(rideData.pickUp.time)
     ) {
       error.pickUpTime = "Invalid Pickup Time";
+    } else if (
+      rideData.pickUp &&
+      rideData.pickUp.location &&
+      !rideData.pickUp.location.name
+    ) {
+      error.pickUpLocName = "Invalid Pickup Location";
     }
 
     if (
@@ -540,6 +544,12 @@ class Ride implements IController {
       !validDateChecker(rideData.dropOff.time)
     ) {
       error.dropOffTime = "Invalid Dropoff Time";
+    } else if (
+      rideData.dropOff &&
+      rideData.dropOff.location &&
+      !rideData.dropOff.location.name
+    ) {
+      error.dropOffLocName = "Invalid Dropoff Location";
     }
     return error;
   }

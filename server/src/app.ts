@@ -6,17 +6,25 @@ import IController from "./models/interfaces/IController";
 import path from "path";
 import SanitizeInput from "./middlewares/sanitizeInput";
 import "./db/db";
+import { Server } from "socket.io";
+import http from "http"; // Import http
+import Chat from "./controllers/Chat"; // Import Chat controller
 
 class App {
   public app: Application;
   public port: number;
+  private server: http.Server; // HTTP server instance
+  private io: Server; // Socket.IO server instance
 
   constructor(controllers: Array<IController>, port: number) {
     this.app = express();
     this.port = port;
+    this.server = http.createServer(this.app); // Create HTTP server
+    this.io = new Server(this.server); // Create Socket.IO server
 
     this.initializeMiddlewares();
     this.initializeControllers(controllers);
+    this.initializeChatController(); // Initialize Chat controller with io instance
   }
 
   private initializeMiddlewares() {
@@ -50,8 +58,12 @@ class App {
     this.app.use(router);
   }
 
+  private initializeChatController() {
+    const chatController = new Chat(this.io);
+  }
+
   public listen() {
-    this.app.listen(this.port, (): void => {
+    this.server.listen(this.port, (): void => {
       console.log(`server listening on port ${this.port}`);
     });
   }
