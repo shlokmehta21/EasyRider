@@ -12,6 +12,7 @@ import SessionData from "../models/SessionData";
 import UserSession from "../utils/session";
 import { ILocation } from "../models/Location";
 import { validDateChecker } from "../utils/date";
+import MyRidesDbModel from "../schemas/MyRides";
 
 class Ride implements IController {
   router: Router;
@@ -376,14 +377,68 @@ class Ride implements IController {
   };
 
   book = async (req: Request, resp: Response): Promise<void> => {
-    const sessionid: string = req.cookies.sessionid as string;
-    const { id, email }: SessionData = new UserSession().getSessionData(
-      sessionid
-    );
+    try {
+      const sessionid: string = req.cookies.sessionid as string;
+      const { id, email }: SessionData = new UserSession().getSessionData(
+        sessionid
+      );
+      if (!id) {
+        new ErrorController().handleError(
+          { code: 401, message: "UnAuthorized Request" },
+          req,
+          resp
+        );
+        return;
+      }
+      const rideData: RideRequest = req.body;
+      const error: { [key: string]: string } =
+        this.rideRequestValidation(rideData);
 
-    const rideData: RideRequest = req.body;
+      if (Object.keys(error).length > 0) {
+        new ErrorController().handleError(
+          { code: 400, customMessage: error },
+          req,
+          resp
+        );
+        return;
+      }
 
-    // TODO: Implement booking logic
+      let db = new RideDbModel();
+      await db
+        .getModel()
+        .findOne({ id: rideData.id })
+        .then(async (ride: RideModel | null) => {
+          if (ride && ride.seatsLeft >= rideData.noOfSeats) {
+            await db.getModel().findOneAndUpdate(
+              { id: rideData.id },
+              {
+                updatedAt: new Date().toISOString(),
+                seatsLeft: ride.seatsLeft - rideData.noOfSeats,
+              }
+            );
+          } else {
+            new ErrorController().handleError(
+              { code: 409, message: "Ride has been booked" },
+              req,
+              resp
+            );
+            return;
+          }
+          const myRideDb = new MyRidesDbModel();
+          await myRideDb.getModel().create({
+            rideId: rideData.id,
+            carId: rideData.carId,
+            userId: ride.userId,
+            noOfSeats: ride.noOfSeats,
+            pickUp: rideData.pickUp,
+            dropOff: rideData.dropOff,
+          });
+        });
+      resp.status(200).json(true);
+    } catch (err) {
+      console.log(err);
+      new ErrorController().handleInternalServer(resp);
+    }
   };
 
   cancel = async (req: Request, resp: Response): Promise<void> => {
@@ -399,8 +454,6 @@ class Ride implements IController {
 
     try {
       const db = new RideDbModel();
-
-      // TODO: Implement cancel ride logic
     } catch (error) {
       console.error("An error occurred while cancelling the ride:", error);
       new ErrorController().handleInternalServer(resp);
@@ -557,19 +610,92 @@ class Ride implements IController {
     }
     return error;
   }
+
+  rideRequestValidation(rideData: RideRequest): {
+    [key: string]: string;
+  } {
+    const error: { [key: string]: string } = {};
+
+    // Validate rideData
+    if (typeof rideData.id !== "string") {
+      error.carId = "Invalid Car ID";
+    } else {
+      const db = new RideDbModel();
+      db.findOneByParams({ id: rideData.id }).then((ride: RideModel | null) => {
+        if (!ride) {
+          error.id = "Invalid Ride ID";
+        }
+      });
+    }
+    if (typeof rideData.carId !== "string") {
+      error.carId = "Invalid Car ID";
+    } else {
+      const db = new UserDbModel();
+      db.findOneByParams({ "car.id": rideData.carId })
+        .then((user: User | null) => {
+          if (!user) {
+            error.carId = "Invalid Car ID";
+          } else {
+            if (
+              typeof rideData.noOfSeats !== "number" ||
+              rideData.noOfSeats <= 0 ||
+              !Number.isInteger(rideData.noOfSeats)
+            ) {
+              error.noOfSeats = "Invalid Number of Seats";
+            } else if (
+              rideData.noOfSeats > (user.car?.seatsAvailable as number)
+            ) {
+              error.noOfSeats = `No. of Seats cannot be greater than ${user.car?.seatsAvailable}`;
+            }
+          }
+        })
+        .catch((err) => {
+          error.errors = "Internal server error occurred";
+          return;
+        });
+    }
+
+    if (
+      !rideData.pickUp ||
+      typeof rideData.pickUp !== "object" ||
+      typeof rideData.pickUp.location !== "object" ||
+      typeof rideData.pickUp.location.coordinates !== "object" ||
+      rideData.pickUp.location.coordinates.length !== 2 ||
+      typeof rideData.pickUp.location.coordinates[0] !== "number" ||
+      typeof rideData.pickUp.location.coordinates[1] !== "number"
+    ) {
+      error.pickUp = "Invalid Pickup Location";
+    } else if (!rideData.pickUp.location.name) {
+      error.pickUpLocName = "Invalid Pickup Location";
+    }
+
+    if (
+      !rideData.dropOff ||
+      typeof rideData.dropOff !== "object" ||
+      typeof rideData.dropOff.location !== "object" ||
+      typeof rideData.dropOff.location.coordinates !== "object" ||
+      rideData.dropOff.location.coordinates.length !== 2 ||
+      typeof rideData.dropOff.location.coordinates[0] !== "number" ||
+      typeof rideData.dropOff.location.coordinates[1] !== "number"
+    ) {
+      error.dropOff = "Invalid Dropoff Location";
+    } else if (!rideData.dropOff.location.name) {
+      error.dropOffLocName = "Invalid Dropoff Location";
+    }
+    return error;
+  }
 }
 
 interface RideRequest {
   id: string;
   carId: string;
+  userId: string;
   noOfSeats: number;
   pickUp: {
     location: ILocation;
-    time: Date;
   };
   dropOff: {
     location: ILocation;
-    time: Date;
   };
 }
 
