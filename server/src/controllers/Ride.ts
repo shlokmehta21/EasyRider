@@ -260,7 +260,7 @@ class Ride implements IController {
       return;
     }
     const rideData: RideModel = req.body;
-    this.rideInputValidation(rideData).then((error) => {
+    await this.rideInputValidation(rideData).then((error) => {
       if (Object.keys(error).length > 0) {
         new ErrorController().handleError(
           { code: 400, customMessage: error },
@@ -302,7 +302,7 @@ class Ride implements IController {
 
     try {
       const rideData: RideModel = req.body;
-      this.rideUpdateValidation(rideData).then((error) => {
+      await this.rideUpdateValidation(rideData).then((error) => {
         if (Object.keys(error).length > 0) {
           new ErrorController().handleError(
             { code: 400, customMessage: error },
@@ -391,7 +391,7 @@ class Ride implements IController {
         return;
       }
       const rideData: RideRequest = req.body;
-      this.rideRequestValidation(rideData).then((error) => {
+      await this.rideRequestValidation(rideData).then((error) => {
         if (Object.keys(error).length > 0) {
           new ErrorController().handleError(
             { code: 400, customMessage: error },
@@ -623,7 +623,7 @@ class Ride implements IController {
 
     // Validate rideData
     if (typeof rideData.id !== "string") {
-      error.carId = "Invalid Car ID";
+      error.carId = "Invalid Ride ID";
     } else {
       const db = new RideDbModel();
       await db
