@@ -26,19 +26,19 @@ class Car implements IController {
 
   initializeRoutes(): void {
     this.router.use(this.path.default as string, CheckUserAuthentication);
-    this.router.get(this.path.default as string, this.getAllCarDetails);
+    this.router.get(this.path.default as string, this.getAllMyCarDetails);
     this.router.post(this.path.default as string, this.getCarDetails);
     this.router.post(this.path.register as string, this.register);
     this.router.delete(this.path.delete as string, this.delete);
   }
-  getAllCarDetails = async (req: Request, resp: Response): Promise<void> => {
+  getAllMyCarDetails = async (req: Request, resp: Response): Promise<void> => {
     try {
       const sessionId = req.cookies.sessionid as string;
       const { id }: SessionData = new UserSession().getSessionData(sessionId);
 
       if (!id) {
         new ErrorController().handleError(
-          { code: 400, message: "Car ID is required" },
+          { code: 400, message: "Invalid User Session" },
           req,
           resp
         );
@@ -74,17 +74,37 @@ class Car implements IController {
   getCarDetails = async (req: Request, resp: Response): Promise<void> => {
     try {
       const sessionId = req.cookies.sessionid as string;
-      const { id: userId }: SessionData = new UserSession().getSessionData(
-        sessionId
-      );
-      const { id }: { id: string } = req.body as { id: string };
-      if (!id) {
+      const { id: sessionUserId }: SessionData =
+        new UserSession().getSessionData(sessionId);
+
+      if (!sessionUserId) {
         new ErrorController().handleError(
-          { code: 400, message: "Car ID is required" },
+          { code: 400, message: "Invalid User session" },
           req,
           resp
         );
       }
+
+      const { userId, id }: { userId: string; id: string } = req.body as {
+        userId: string;
+        id: string;
+      };
+      const error: { [key: string]: string } = {};
+      if (!id) {
+        error.id = "Car ID is required";
+      }
+      if (!userId) {
+        error.userId = "User ID is required";
+      }
+      if (Object.keys(error).length > 0) {
+        new ErrorController().handleError(
+          { code: 400, customMessage: error },
+          req,
+          resp
+        );
+        return;
+      }
+
       const db = new UserDbModel();
       const car = await db.getModel().findOne(
         { id: userId, "car.id": id },
@@ -97,7 +117,7 @@ class Car implements IController {
         resp.status(200).json(car);
       } else {
         new ErrorController().handleError(
-          { code: 400, message: "User Not Found" },
+          { code: 400, message: "User/Car Not Found" },
           req,
           resp
         );

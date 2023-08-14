@@ -260,16 +260,16 @@ class Ride implements IController {
       return;
     }
     const rideData: RideModel = req.body;
-    const error: { [key: string]: string } = this.rideInputValidation(rideData);
-
-    if (Object.keys(error).length > 0) {
-      new ErrorController().handleError(
-        { code: 400, customMessage: error },
-        req,
-        resp
-      );
-      return;
-    }
+    this.rideInputValidation(rideData).then((error) => {
+      if (Object.keys(error).length > 0) {
+        new ErrorController().handleError(
+          { code: 400, customMessage: error },
+          req,
+          resp
+        );
+        return;
+      }
+    });
 
     try {
       // Save the new ride to the database
@@ -302,17 +302,17 @@ class Ride implements IController {
 
     try {
       const rideData: RideModel = req.body;
-      const error: { [key: string]: string } =
-        this.rideUpdateValidation(rideData);
+      this.rideUpdateValidation(rideData).then((error) => {
+        if (Object.keys(error).length > 0) {
+          new ErrorController().handleError(
+            { code: 400, customMessage: error },
+            req,
+            resp
+          );
+          return;
+        }
+      });
 
-      if (Object.keys(error).length > 0) {
-        new ErrorController().handleError(
-          { code: 400, customMessage: error },
-          req,
-          resp
-        );
-        return;
-      }
       const db = new RideDbModel();
       db.findIfExists({ id: rideData.id }).then(async (valid: boolean) => {
         if (!valid) {
@@ -391,17 +391,16 @@ class Ride implements IController {
         return;
       }
       const rideData: RideRequest = req.body;
-      const error: { [key: string]: string } =
-        this.rideRequestValidation(rideData);
-
-      if (Object.keys(error).length > 0) {
-        new ErrorController().handleError(
-          { code: 400, customMessage: error },
-          req,
-          resp
-        );
-        return;
-      }
+      this.rideRequestValidation(rideData).then((error) => {
+        if (Object.keys(error).length > 0) {
+          new ErrorController().handleError(
+            { code: 400, customMessage: error },
+            req,
+            resp
+          );
+          return;
+        }
+      });
 
       let db = new RideDbModel();
       await db
@@ -460,7 +459,9 @@ class Ride implements IController {
     }
   };
 
-  rideInputValidation(rideData: RideModel): { [key: string]: string } {
+  async rideInputValidation(
+    rideData: RideModel
+  ): Promise<{ [key: string]: string }> {
     const error: { [key: string]: string } = {};
 
     // Validate rideData
@@ -468,7 +469,8 @@ class Ride implements IController {
       error.carId = "Invalid Car ID";
     } else {
       const db = new UserDbModel();
-      db.findOneByParams({ "car.id": rideData.carId })
+      await db
+        .findOneByParams({ "car.id": rideData.carId })
         .then((user: User | null) => {
           if (!user) {
             error.carId = "Invalid Car ID";
@@ -526,7 +528,9 @@ class Ride implements IController {
     return error;
   }
 
-  rideUpdateValidation(rideData: RideModel): { [key: string]: string } {
+  async rideUpdateValidation(
+    rideData: RideModel
+  ): Promise<{ [key: string]: string }> {
     const error: { [key: string]: string } = {};
 
     // Validate rideData
@@ -537,7 +541,8 @@ class Ride implements IController {
       error.carId = "Invalid Car ID";
     } else {
       const db = new UserDbModel();
-      db.findOneByParams({ "car.id": rideData.carId })
+      await db
+        .findOneByParams({ "car.id": rideData.carId })
         .then((user: User | null) => {
           if (!user) {
             error.carId = "Invalid Car ID";
@@ -611,9 +616,9 @@ class Ride implements IController {
     return error;
   }
 
-  rideRequestValidation(rideData: RideRequest): {
-    [key: string]: string;
-  } {
+  async rideRequestValidation(
+    rideData: RideRequest
+  ): Promise<{ [key: string]: string }> {
     const error: { [key: string]: string } = {};
 
     // Validate rideData
@@ -621,17 +626,20 @@ class Ride implements IController {
       error.carId = "Invalid Car ID";
     } else {
       const db = new RideDbModel();
-      db.findOneByParams({ id: rideData.id }).then((ride: RideModel | null) => {
-        if (!ride) {
-          error.id = "Invalid Ride ID";
-        }
-      });
+      await db
+        .findOneByParams({ id: rideData.id })
+        .then((ride: RideModel | null) => {
+          if (!ride) {
+            error.id = "Invalid Ride ID";
+          }
+        });
     }
     if (typeof rideData.carId !== "string") {
       error.carId = "Invalid Car ID";
     } else {
       const db = new UserDbModel();
-      db.findOneByParams({ "car.id": rideData.carId })
+      await db
+        .findOneByParams({ "car.id": rideData.carId })
         .then((user: User | null) => {
           if (!user) {
             error.carId = "Invalid Car ID";
