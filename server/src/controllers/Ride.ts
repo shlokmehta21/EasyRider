@@ -409,12 +409,13 @@ class Ride implements IController {
         .then(async (ride: RideModel | null) => {
           console.log(ride, ride?.seatsLeft, rideData.noOfSeats, "asdf");
           if (ride && ride.seatsLeft >= rideData.noOfSeats) {
+            const updatedSeatCount = ride.seatsLeft - rideData.noOfSeats;
             await db.getModel().findOneAndUpdate(
               { id: rideData.id },
               {
                 updatedAt: new Date().toISOString(),
-                seatsLeft: ride.seatsLeft - rideData.noOfSeats,
-                isAvailable: ride.seatsLeft - rideData.noOfSeats === 0,
+                seatsLeft: updatedSeatCount,
+                isAvailable: updatedSeatCount !== 0,
               }
             );
           } else {
@@ -430,7 +431,7 @@ class Ride implements IController {
             rideId: rideData.id,
             carId: rideData.carId,
             userId: ride.userId,
-            noOfSeats: ride.noOfSeats,
+            noOfSeats: rideData.noOfSeats,
             pickUp: rideData.pickUp,
             dropOff: rideData.dropOff,
           });
