@@ -407,12 +407,14 @@ class Ride implements IController {
         .getModel()
         .findOne({ id: rideData.id })
         .then(async (ride: RideModel | null) => {
+          console.log(ride, ride?.seatsLeft, rideData.noOfSeats, "asdf");
           if (ride && ride.seatsLeft >= rideData.noOfSeats) {
             await db.getModel().findOneAndUpdate(
               { id: rideData.id },
               {
                 updatedAt: new Date().toISOString(),
                 seatsLeft: ride.seatsLeft - rideData.noOfSeats,
+                isAvailable: ride.seatsLeft - rideData.noOfSeats === 0,
               }
             );
           } else {
@@ -432,8 +434,8 @@ class Ride implements IController {
             pickUp: rideData.pickUp,
             dropOff: rideData.dropOff,
           });
+          resp.status(200).json(true);
         });
-      resp.status(200).json(true);
     } catch (err) {
       console.log(err);
       new ErrorController().handleInternalServer(resp);
@@ -631,6 +633,16 @@ class Ride implements IController {
         .then((ride: RideModel | null) => {
           if (!ride) {
             error.id = "Invalid Ride ID";
+          } else {
+            if (
+              typeof rideData.noOfSeats !== "number" ||
+              rideData.noOfSeats <= 0 ||
+              !Number.isInteger(rideData.noOfSeats)
+            ) {
+              error.noOfSeats = "Invalid Number of Seats";
+            } else if (rideData.noOfSeats > (ride.seatsLeft as number)) {
+              error.noOfSeats = `No Seats Available`;
+            }
           }
         });
     }
@@ -643,18 +655,6 @@ class Ride implements IController {
         .then((user: User | null) => {
           if (!user) {
             error.carId = "Invalid Car ID";
-          } else {
-            if (
-              typeof rideData.noOfSeats !== "number" ||
-              rideData.noOfSeats <= 0 ||
-              !Number.isInteger(rideData.noOfSeats)
-            ) {
-              error.noOfSeats = "Invalid Number of Seats";
-            } else if (
-              rideData.noOfSeats > (user.car?.seatsAvailable as number)
-            ) {
-              error.noOfSeats = `No. of Seats cannot be greater than ${user.car?.seatsAvailable}`;
-            }
           }
         })
         .catch((err) => {
