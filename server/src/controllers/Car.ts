@@ -42,6 +42,7 @@ class Car implements IController {
           req,
           resp
         );
+        return;
       }
       const db = new UserDbModel();
       const car = await db.getModel().findOne(
@@ -83,6 +84,7 @@ class Car implements IController {
           req,
           resp
         );
+        return;
       }
 
       const { userId, id }: { userId: string; id: string } = req.body as {
@@ -136,6 +138,7 @@ class Car implements IController {
           req,
           resp
         );
+        return;
       }
       const db = new UserDbModel();
       const user: User = (await db.findOneByParams({
@@ -198,6 +201,7 @@ class Car implements IController {
         req,
         resp
       );
+      return;
     } else {
       const db = new UserDbModel();
       const sessionId: string = req.cookies.sessionid as string;
