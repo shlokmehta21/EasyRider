@@ -5,6 +5,7 @@ import Ride from "./controllers/Ride";
 import Location from "./controllers/Location";
 import UserProfile from "./controllers/UserProfile";
 import Car from "./controllers/Car";
+import MyRide from "./controllers/MyRide";
 
 require("dotenv").config();
 
@@ -17,6 +18,7 @@ const app = new App(
     new Car(),
     new UserProfile(),
     new Location(),
+    new MyRide(),
   ],
   PORT
 );

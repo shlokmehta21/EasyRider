@@ -36,6 +36,9 @@ const routes: RouteConfig = {
     default: "/chat",
     unread: "/unread",
   },
+  MY_RIDES: {
+    default: "/my-trips",
+  },
 };
 
 export default routes;

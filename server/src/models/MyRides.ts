@@ -5,6 +5,7 @@ export interface MyRides extends Document {
   id: string;
   userId: string;
   carId: string;
+  rideId: string;
   noOfSeats: number;
   seatsLeft: number;
   pickUp: {

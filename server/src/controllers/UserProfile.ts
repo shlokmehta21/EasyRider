@@ -43,10 +43,6 @@ class UserProfile implements IController {
     this.router.get(this.path.profilePicture as string, this.getProfilePicture);
     this.router.post(this.path.domainImages as string, this.getDomainImages);
     this.router.put(this.path.updateLocale as string, this.updateLocale);
-    this.router.post(
-      this.path.profilePicture as string,
-      this.getProfilePicture
-    );
   }
   updateLocale = async (req: Request, resp: Response): Promise<void> => {
     const { locale }: { locale: string } = req.body;
