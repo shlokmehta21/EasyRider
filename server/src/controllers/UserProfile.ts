@@ -8,15 +8,13 @@ import crypto from "crypto";
 import { regex } from "../utils/regex";
 import ErrorController from "./Error";
 import ResetDBModel from "../schemas/Reset";
-import { passwordResetLabels, registerErrorLabels } from "../utils/label";
+import { passwordResetLabels } from "../utils/label";
 import Mail from "../utils/mail";
 import bcrypt from "bcrypt";
 import CheckUserAuthentication from "../middlewares/Auth";
-import path from "path";
 import { validDateChecker } from "../utils/date";
 import SessionData from "../models/SessionData";
 import UserSession from "../utils/session";
-import { readFile } from "fs/promises";
 
 class UserProfile implements IController {
   router: Router;
@@ -399,7 +397,10 @@ class UserProfile implements IController {
     )
       .then((user: User | null) => {
         if (user) {
-          resp.status(200).json(user);
+          resp.status(200).json({
+            id: user.id,
+            profilePicture: user.profilePicture?.toString("base64"),
+          });
         } else {
           new ErrorController().handleError(
             { code: 400, message: "User Not Found" },

@@ -24,6 +24,7 @@ const userSchema = new mongoose.Schema({
     required: true,
   },
   license: {
+    type: mongoose.Schema.Types.Mixed,
     number: {
       type: String,
     },
