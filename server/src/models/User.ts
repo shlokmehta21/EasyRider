@@ -8,7 +8,7 @@ interface User extends mongoose.Document {
   email: string;
   license?: {
     number: string;
-    images: Buffer[];
+    images: string;
   };
   dob: number;
   password: string;
@@ -30,7 +30,7 @@ interface Domain {
   domainID: string;
   startDate: number;
   endDate?: number;
-  images?: Buffer[];
+  images?: string[];
 }
 
 export default User;

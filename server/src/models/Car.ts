@@ -5,7 +5,7 @@ interface Car {
   purchasedOn: number;
   plateNo: string;
   carType: string;
-  images: Buffer[];
+  images: string[];
   seatsAvailable: number;
 }
 

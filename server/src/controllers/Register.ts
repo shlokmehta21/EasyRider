@@ -28,15 +28,6 @@ class RegisterController implements IController {
     const user: User = req.body;
     const error: { [key: string]: string } = {};
 
-    // Read image files asynchronously
-    const imagesBuffer = await Promise.all([
-      readFile(path.join(__dirname, "../asset/img/bottle.png")),
-      readFile(path.join(__dirname, "../asset/img/bottle.png")),
-    ]);
-
-    // Assign image buffers to user domain
-    user.domain[0].images = imagesBuffer;
-
     // firstName validation
     const { firstName } = user;
     if (!firstName || !firstName.trim()) {
@@ -137,6 +128,10 @@ class RegisterController implements IController {
 
       if (!domainDetails.images || domainDetails.images.length < 2) {
         error.domainIDImages = "Front and Back side images are required";
+      } else {
+        req.body.domain.forEach(
+          (obj: any) => (obj.images = obj.images?.map((x: any) => x.base64))
+        );
       }
     }
 

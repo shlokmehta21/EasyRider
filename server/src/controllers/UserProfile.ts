@@ -57,8 +57,8 @@ class UserProfile implements IController {
       sessionid
     );
 
-    if (user.profilePicture && !Buffer.isBuffer(user.profilePicture)) {
-      error.profilePicture = "Invalid profile picture format";
+    if (!user.profilePicture) {
+      error.profilePicture = "Invalid Request ";
     }
 
     if (Object.keys(error).length > 0) {
@@ -190,7 +190,7 @@ class UserProfile implements IController {
     }
 
     // license validation
-    const { license } = user;
+    const { license } = req.body;
     if (license && Object.keys(license).length > 0) {
       if (!license.number) {
         error.licenseNo = "License is required";
@@ -200,7 +200,7 @@ class UserProfile implements IController {
       if (!license.images || license.images.length < 1) {
         error.licenseImage = "License Image is required";
       } else {
-        updateData.license.images = license.images;
+        updateData.license.images = license.images?.base64 as string;
       }
     }
 
@@ -397,10 +397,7 @@ class UserProfile implements IController {
     )
       .then((user: User | null) => {
         if (user) {
-          resp.status(200).json({
-            id: user.id,
-            profilePicture: user.profilePicture?.toString("base64"),
-          });
+          resp.status(200).json(user);
         } else {
           new ErrorController().handleError(
             { code: 400, message: "User Not Found" },
